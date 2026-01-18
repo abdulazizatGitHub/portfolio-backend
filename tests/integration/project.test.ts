@@ -74,33 +74,43 @@ describe('Project Integration Tests', () => {
                     is_published: true
                 });
 
-            if (response.status !== 201) {
-                console.log('CREATE PROJECT ERROR:', JSON.stringify(response.body, null, 2));
-            }
-
             expect(response.status).toBe(201);
-            expect(response.body.data.project.title).toBe('test-Project');
-            projectId = response.body.data.project.id;
+            expect(response.body.success).toBe(true);
+            expect(response.body.data.title).toBe('test-Project');
+            projectId = response.body.data.id;
         });
 
-        it('should return 401 if not authenticated', async () => {
+        it('should return 400 if category does not exist', async () => {
             const response = await request(app)
                 .post('/api/v1/projects')
-                .send({ title: 'test-Fail' });
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({
+                    title: 'test-Fail Category',
+                    description: 'A very cool test project description',
+                    category_id: '00000000-0000-0000-0000-000000000000'
+                });
 
-            expect(response.status).toBe(401);
+            expect(response.status).toBe(400);
+            expect(response.body.code).toBe('RELATION_NOT_FOUND');
         });
     });
 
     describe('GET /api/v1/projects', () => {
-        it('should return projects with filters', async () => {
+        it('should return projects with pagination and filters', async () => {
             const response = await request(app)
                 .get('/api/v1/projects')
-                .query({ is_published: 'true', category_id: categoryId });
+                .query({ page: 1, limit: 10, category_id: categoryId });
 
             expect(response.status).toBe(200);
-            expect(Array.isArray(response.body.data.projects)).toBe(true);
-            expect(response.body.data.projects.length).toBeGreaterThan(0);
+            expect(response.body.success).toBe(true);
+            expect(Array.isArray(response.body.data)).toBe(true);
+            expect(response.body.meta.total).toBeGreaterThan(0);
+        });
+
+        it('should support search', async () => {
+            const response = await request(app).get('/api/v1/projects?search=Project');
+            expect(response.status).toBe(200);
+            expect(response.body.data.some((p: any) => p.title.includes('Project'))).toBe(true);
         });
     });
 
@@ -115,11 +125,11 @@ describe('Project Integration Tests', () => {
                 });
 
             expect(response.status).toBe(200);
-            expect(response.body.data.project.title).toBe('test-Updated Project Title');
+            expect(response.body.data.title).toBe('test-Updated Project Title');
         });
     });
 
-    describe('DELETE /api/v1/projects/:id', () => {
+    describe('Soft Delete and Restore', () => {
         it('should soft delete project', async () => {
             const response = await request(app)
                 .delete(`/api/v1/projects/${projectId}`)
@@ -127,9 +137,17 @@ describe('Project Integration Tests', () => {
 
             expect(response.status).toBe(204);
 
-            // Verify soft delete
             const deleted = await prisma.project.findFirst({ where: { id: projectId } });
             expect(deleted?.deleted_at).not.toBeNull();
+        });
+
+        it('should restore project', async () => {
+            const response = await request(app)
+                .patch(`/api/v1/projects/${projectId}/restore`)
+                .set('Authorization', `Bearer ${adminToken}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.data.deleted_at).toBeNull();
         });
     });
 });

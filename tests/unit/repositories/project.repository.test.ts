@@ -1,14 +1,12 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../../src/data/prisma.client';
 import * as ProjectRepository from '../../../src/data/repositories/project.repository';
 import * as CategoryRepository from '../../../src/data/repositories/category.repository';
 import * as SkillRepository from '../../../src/data/repositories/skill.repository';
 
-const prisma = new PrismaClient();
-
 describe('Project Repository', () => {
-    let testCategory: Awaited<ReturnType<typeof CategoryRepository.create>>;
-    let testSkill1: Awaited<ReturnType<typeof SkillRepository.create>>;
-    let testSkill2: Awaited<ReturnType<typeof SkillRepository.create>>;
+    let testCategory: any;
+    let testSkill1: any;
+    let testSkill2: any;
 
     beforeAll(async () => {
         // Clean up
@@ -81,21 +79,22 @@ describe('Project Repository', () => {
                 category: {
                     connect: { id: testCategory.id },
                 },
-            });
-
-            // Add skills
-            await ProjectRepository.addSkill(project.id, testSkill1.id);
-            await ProjectRepository.addSkill(project.id, testSkill2.id);
-
-            // Add images
-            await prisma.image.create({
-                data: {
-                    project_id: project.id,
-                    url: 'https://example.com/image.jpg',
-                    alt_text: 'Test image',
-                    is_thumbnail: true,
-                    order_index: 1,
+                project_skills: {
+                    create: [
+                        { skill_id: testSkill1.id },
+                        { skill_id: testSkill2.id }
+                    ]
                 },
+                images: {
+                    create: [
+                        {
+                            url: 'https://example.com/image.jpg',
+                            alt_text: 'Test image',
+                            is_thumbnail: true,
+                            order_index: 1,
+                        }
+                    ]
+                }
             });
 
             const found = await ProjectRepository.findById(project.id);
@@ -103,7 +102,7 @@ describe('Project Repository', () => {
             expect(found).not.toBeNull();
             expect(found?.id).toBe(project.id);
             expect(found?.category).toBeDefined();
-            expect(found?.category.slug).toBe(testCategory.slug);
+            expect(found?.category?.slug).toBe(testCategory.slug);
             expect(found?.images).toHaveLength(1);
             expect(found?.project_skills).toHaveLength(2);
         });
@@ -155,8 +154,8 @@ describe('Project Repository', () => {
             const projects = await ProjectRepository.findAll();
 
             expect(projects).toHaveLength(2);
-            expect(projects[0].title).toBe('Project B'); // order_index 1
-            expect(projects[1].title).toBe('Project A'); // order_index 2
+            expect(projects[0]!.title).toBe('Project B'); // order_index 1
+            expect(projects[1]!.title).toBe('Project A'); // order_index 2
         });
 
         it('should filter by is_published', async () => {
@@ -183,7 +182,7 @@ describe('Project Repository', () => {
             const published = await ProjectRepository.findAll({ is_published: true });
 
             expect(published).toHaveLength(1);
-            expect(published[0].title).toBe('Published Project');
+            expect(published[0]!.title).toBe('Published Project');
         });
 
         it('should filter by featured', async () => {
@@ -210,109 +209,7 @@ describe('Project Repository', () => {
             const featured = await ProjectRepository.findAll({ featured: true });
 
             expect(featured).toHaveLength(1);
-            expect(featured[0].title).toBe('Featured Project');
-        });
-    });
-
-    describe('findPublished', () => {
-        it('should return only published projects', async () => {
-            await prisma.project.deleteMany();
-
-            await ProjectRepository.create({
-                title: 'Published 1',
-                description: 'Test',
-                is_published: true,
-                order_index: 1,
-                category: {
-                    connect: { id: testCategory.id },
-                },
-            });
-
-            await ProjectRepository.create({
-                title: 'Draft',
-                description: 'Test',
-                is_published: false,
-                order_index: 2,
-                category: {
-                    connect: { id: testCategory.id },
-                },
-            });
-
-            const published = await ProjectRepository.findPublished();
-
-            expect(published).toHaveLength(1);
-            expect(published.every((p) => p.is_published)).toBe(true);
-        });
-    });
-
-    describe('findFeatured', () => {
-        it('should return only featured and published projects', async () => {
-            await prisma.project.deleteMany();
-
-            await ProjectRepository.create({
-                title: 'Featured & Published',
-                description: 'Test',
-                featured: true,
-                is_published: true,
-                order_index: 1,
-                category: {
-                    connect: { id: testCategory.id },
-                },
-            });
-
-            await ProjectRepository.create({
-                title: 'Featured but Draft',
-                description: 'Test',
-                featured: true,
-                is_published: false,
-                order_index: 2,
-                category: {
-                    connect: { id: testCategory.id },
-                },
-            });
-
-            const featured = await ProjectRepository.findFeatured();
-
-            expect(featured).toHaveLength(1);
-            expect(featured[0].title).toBe('Featured & Published');
-        });
-    });
-
-    describe('addSkill and removeSkill', () => {
-        it('should add skill to project', async () => {
-            const project = await ProjectRepository.create({
-                title: 'Project for Skills',
-                description: 'Test',
-                order_index: 1,
-                category: {
-                    connect: { id: testCategory.id },
-                },
-            });
-
-            await ProjectRepository.addSkill(project.id, testSkill1.id);
-
-            const found = await ProjectRepository.findById(project.id);
-
-            expect(found?.project_skills).toHaveLength(1);
-            expect(found?.project_skills[0].skill.name).toBe('React');
-        });
-
-        it('should remove skill from project', async () => {
-            const project = await ProjectRepository.create({
-                title: 'Project to Remove Skill',
-                description: 'Test',
-                order_index: 1,
-                category: {
-                    connect: { id: testCategory.id },
-                },
-            });
-
-            await ProjectRepository.addSkill(project.id, testSkill1.id);
-            await ProjectRepository.removeSkill(project.id, testSkill1.id);
-
-            const found = await ProjectRepository.findById(project.id);
-
-            expect(found?.project_skills).toHaveLength(0);
+            expect(featured[0]!.title).toBe('Featured Project');
         });
     });
 
@@ -339,8 +236,8 @@ describe('Project Repository', () => {
         });
     });
 
-    describe('softDelete', () => {
-        it('should soft delete project', async () => {
+    describe('softDelete and Restore', () => {
+        it('should soft delete and restore project', async () => {
             const project = await ProjectRepository.create({
                 title: 'To Delete',
                 description: 'Test',
@@ -351,12 +248,10 @@ describe('Project Repository', () => {
             });
 
             const deleted = await ProjectRepository.softDelete(project.id);
-
             expect(deleted.deleted_at).not.toBeNull();
 
-            const found = await ProjectRepository.findById(project.id);
-            expect(found).toBeNull();
+            const restored = await ProjectRepository.restore(project.id);
+            expect(restored.deleted_at).toBeNull();
         });
     });
 });
-

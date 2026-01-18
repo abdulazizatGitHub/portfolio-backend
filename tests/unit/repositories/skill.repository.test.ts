@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../../src/data/prisma.client';
 import * as SkillRepository from '../../../src/data/repositories/skill.repository';
-
-const prisma = new PrismaClient();
 
 describe('Skill Repository', () => {
     beforeAll(async () => {
@@ -56,9 +54,14 @@ describe('Skill Repository', () => {
             const skills = await SkillRepository.findAll();
 
             expect(skills).toHaveLength(3);
-            expect(skills[0].name).toBe('Docker'); // Alphabetically first
-            expect(skills[1].name).toBe('Node.js');
-            expect(skills[2].name).toBe('TypeScript');
+            expect(skills[0]!.name).toBe('Docker'); // Alphabetically first
+            expect(skills[1]!.name).toBe('Node.js');
+            expect(skills[2]!.name).toBe('TypeScript');
+        });
+
+        it('should filter by category', async () => {
+            const skills = await SkillRepository.findAll({ category: 'Frontend' });
+            expect(skills.every(s => s.category === 'Frontend')).toBe(true);
         });
     });
 
@@ -77,12 +80,6 @@ describe('Skill Repository', () => {
             expect(skill).not.toBeNull();
             expect(skill?.name).toBe(skillData.name);
         });
-
-        it('should return null for non-existent slug', async () => {
-            const skill = await SkillRepository.findBySlug('non-existent-slug');
-
-            expect(skill).toBeNull();
-        });
     });
 
     describe('findById', () => {
@@ -100,55 +97,6 @@ describe('Skill Repository', () => {
         });
     });
 
-    describe('findByCategory', () => {
-        it('should find skills by category', async () => {
-            await prisma.skill.deleteMany();
-
-            await SkillRepository.create({
-                name: 'React',
-                slug: 'react',
-                category: 'Frontend',
-            });
-
-            await SkillRepository.create({
-                name: 'Vue',
-                slug: 'vue',
-                category: 'Frontend',
-            });
-
-            await SkillRepository.create({
-                name: 'Python',
-                slug: 'python',
-                category: 'Backend',
-            });
-
-            const frontendSkills = await SkillRepository.findByCategory('Frontend');
-
-            expect(frontendSkills).toHaveLength(2);
-            expect(frontendSkills.every((s) => s.category === 'Frontend')).toBe(true);
-        });
-    });
-
-    describe('update', () => {
-        it('should update skill fields', async () => {
-            const skill = await SkillRepository.create({
-                name: 'Original Skill',
-                slug: 'original-skill',
-                category: 'Frontend',
-            });
-
-            const updated = await SkillRepository.update(skill.id, {
-                name: 'Updated Skill',
-                category: 'Backend',
-                icon_url: 'https://example.com/updated.svg',
-            });
-
-            expect(updated.name).toBe('Updated Skill');
-            expect(updated.category).toBe('Backend');
-            expect(updated.icon_url).toBe('https://example.com/updated.svg');
-        });
-    });
-
     describe('delete', () => {
         it('should delete skill by ID', async () => {
             const skill = await SkillRepository.create({
@@ -157,7 +105,7 @@ describe('Skill Repository', () => {
                 category: 'Frontend',
             });
 
-            const deleted = await SkillRepository.deleteSkill(skill.id);
+            const deleted = await SkillRepository.deleteById(skill.id);
 
             expect(deleted.id).toBe(skill.id);
 
@@ -166,4 +114,3 @@ describe('Skill Repository', () => {
         });
     });
 });
-

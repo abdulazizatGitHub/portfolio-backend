@@ -1,17 +1,33 @@
 import * as skillRepository from '@data/repositories/skill.repository';
-import { NotFoundError } from '../exceptions/app-errors';
+import { NotFoundError, ConflictError } from '../exceptions/app-errors';
 import { Skill } from '@data/prisma.client';
+import { slugify } from '@utils/slugify';
 
 /**
- * Skill Service
- * Logic layer for skill management
+ * Get all skills with pagination and filters
  */
+export const getAllSkills = async (options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    category?: string;
+} = {}): Promise<{ skills: Skill[]; total: number }> => {
+    const {
+        page = 1,
+        limit = 10,
+        ...filters
+    } = options;
 
-/**
- * Get all skills
- */
-export const getAllSkills = async (): Promise<Skill[]> => {
-    return await skillRepository.findAll();
+    const skip = (page - 1) * limit;
+
+    const [skills, total] = await Promise.all([
+        skillRepository.findAll({ ...filters, skip, take: limit }),
+        skillRepository.count(filters),
+    ]);
+
+    return { skills, total };
 };
 
 /**
@@ -41,13 +57,27 @@ export const getSkillBySlug = async (slug: string): Promise<Skill> => {
  */
 export const createSkill = async (data: {
     name: string;
-    slug: string;
+    slug?: string;
     category?: string | null;
-    level?: string | null;
     icon_url?: string | null;
-    order_index?: number;
 }): Promise<Skill> => {
-    return await skillRepository.create(data);
+    // 1. Generate slug if missing
+    const slug = data.slug ? slugify(data.slug) : slugify(data.name);
+
+    // 2. Check uniqueness (name and slug)
+    const [existingName, existingSlug] = await Promise.all([
+        skillRepository.findByName(data.name),
+        skillRepository.findBySlug(slug),
+    ]);
+
+    if (existingName || existingSlug) {
+        throw new ConflictError('Skill name or slug already exists', 'SKILL_CONFLICT');
+    }
+
+    return await skillRepository.create({
+        ...data,
+        slug,
+    });
 };
 
 /**
@@ -59,12 +89,29 @@ export const updateSkill = async (
         name?: string;
         slug?: string;
         category?: string | null;
-        level?: string | null;
         icon_url?: string | null;
-        order_index?: number;
     }
 ): Promise<Skill> => {
+    // Check if exists
     await getSkillById(id);
+
+    // Uniqueness checks if name or slug changes
+    if (data.name) {
+        const existing = await skillRepository.findByName(data.name);
+        if (existing && existing.id !== id) {
+            throw new ConflictError('Skill name already exists', 'SKILL_NAME_CONFLICT');
+        }
+    }
+
+    if (data.slug) {
+        const slug = slugify(data.slug);
+        const existing = await skillRepository.findBySlug(slug);
+        if (existing && existing.id !== id) {
+            throw new ConflictError('Skill slug already exists', 'SKILL_SLUG_CONFLICT');
+        }
+        data.slug = slug;
+    }
+
     return await skillRepository.update(id, data);
 };
 
@@ -73,5 +120,5 @@ export const updateSkill = async (
  */
 export const deleteSkill = async (id: string): Promise<Skill> => {
     await getSkillById(id);
-    return await skillRepository.deleteSkill(id);
+    return await skillRepository.deleteById(id);
 };

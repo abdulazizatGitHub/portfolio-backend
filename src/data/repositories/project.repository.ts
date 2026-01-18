@@ -33,155 +33,145 @@ export type ProjectWithRelations = Project & {
 };
 
 /**
- * Find all projects with optional filtering
- * @param filters - Optional filters for published, featured, category
- * @returns Array of projects with relations
+ * Standard project inclusion for consistency
  */
-export const findAll = async (filters?: {
+const PROJECT_INCLUDE = {
+    category: {
+        select: {
+            id: true,
+            name: true,
+            slug: true,
+        },
+    },
+    images: {
+        select: {
+            id: true,
+            url: true,
+            alt_text: true,
+            is_thumbnail: true,
+            order_index: true,
+        },
+        orderBy: { order_index: 'asc' as const },
+    },
+    project_skills: {
+        include: {
+            skill: {
+                select: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                    icon_url: true,
+                    category: true,
+                },
+            },
+        },
+    },
+};
+
+/**
+ * Find all projects with advanced options
+ */
+export const findAll = async (options: {
+    skip?: number;
+    take?: number;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    category_id?: string;
     is_published?: boolean;
     featured?: boolean;
-    category_id?: string;
-}): Promise<ProjectWithRelations[]> => {
+    includeDeleted?: boolean;
+} = {}): Promise<ProjectWithRelations[]> => {
+    const {
+        skip,
+        take,
+        search,
+        sortBy = 'order_index',
+        sortOrder = 'asc',
+        category_id,
+        is_published,
+        featured,
+        includeDeleted = false,
+    } = options;
+
     const where: Prisma.ProjectWhereInput = {
-        deleted_at: null,
-        ...filters,
+        deleted_at: includeDeleted ? undefined : null,
+        category_id,
+        is_published,
+        featured,
+        OR: search ? [
+            { title: { contains: search, mode: 'insensitive' } },
+            { description: { contains: search, mode: 'insensitive' } },
+        ] : undefined,
     };
 
     return await prisma.project.findMany({
         where,
-        include: {
-            category: {
-                select: {
-                    id: true,
-                    name: true,
-                    slug: true,
-                },
-            },
-            images: {
-                select: {
-                    id: true,
-                    url: true,
-                    alt_text: true,
-                    is_thumbnail: true,
-                    order_index: true,
-                },
-                orderBy: { order_index: 'asc' },
-            },
-            project_skills: {
-                include: {
-                    skill: {
-                        select: {
-                            id: true,
-                            name: true,
-                            slug: true,
-                            icon_url: true,
-                            category: true,
-                        },
-                    },
-                },
-            },
-        },
-        orderBy: { order_index: 'asc' },
-    });
+        skip,
+        take,
+        include: PROJECT_INCLUDE,
+        orderBy: { [sortBy]: sortOrder },
+    }) as ProjectWithRelations[];
+};
+
+/**
+ * Count projects based on filters
+ */
+export const count = async (options: {
+    search?: string;
+    category_id?: string;
+    is_published?: boolean;
+    featured?: boolean;
+    includeDeleted?: boolean;
+} = {}): Promise<number> => {
+    const { search, category_id, is_published, featured, includeDeleted = false } = options;
+
+    const where: Prisma.ProjectWhereInput = {
+        deleted_at: includeDeleted ? undefined : null,
+        category_id,
+        is_published,
+        featured,
+        OR: search ? [
+            { title: { contains: search, mode: 'insensitive' } },
+            { description: { contains: search, mode: 'insensitive' } },
+        ] : undefined,
+    };
+
+    return await prisma.project.count({ where });
 };
 
 /**
  * Find project by ID with relations
- * @param id - Project ID
- * @returns Project with relations or null if not found
  */
 export const findById = async (
-    id: string
+    id: string,
+    includeDeleted = false
 ): Promise<ProjectWithRelations | null> => {
     return await prisma.project.findFirst({
         where: {
             id,
-            deleted_at: null,
+            deleted_at: includeDeleted ? undefined : null,
         },
-        include: {
-            category: {
-                select: {
-                    id: true,
-                    name: true,
-                    slug: true,
-                },
-            },
-            images: {
-                select: {
-                    id: true,
-                    url: true,
-                    alt_text: true,
-                    is_thumbnail: true,
-                    order_index: true,
-                },
-                orderBy: { order_index: 'asc' },
-            },
-            project_skills: {
-                include: {
-                    skill: {
-                        select: {
-                            id: true,
-                            name: true,
-                            slug: true,
-                            icon_url: true,
-                            category: true,
-                        },
-                    },
-                },
-            },
-        },
-    });
-};
-
-/**
- * Find all published projects
- * @returns Array of published projects
- */
-export const findPublished = async (): Promise<ProjectWithRelations[]> => {
-    return await findAll({ is_published: true });
-};
-
-/**
- * Find all featured projects
- * @returns Array of featured projects
- */
-export const findFeatured = async (): Promise<ProjectWithRelations[]> => {
-    return await findAll({ featured: true, is_published: true });
+        include: PROJECT_INCLUDE,
+    }) as ProjectWithRelations | null;
 };
 
 /**
  * Create a new project
- * @param data - Project creation data
- * @returns Created project
  */
-export const create = async (
-    data: Prisma.ProjectCreateInput
-): Promise<Project> => {
-    return await prisma.project.create({
-        data,
-    });
+export const create = async (data: Prisma.ProjectCreateInput): Promise<Project> => {
+    return await prisma.project.create({ data });
 };
 
 /**
  * Update project by ID
- * @param id - Project ID
- * @param data - Project update data
- * @returns Updated project
  */
-export const update = async (
-    id: string,
-    data: Prisma.ProjectUpdateInput
-): Promise<Project> => {
-    return await prisma.project.update({
-        where: { id },
-        data,
-    });
+export const update = async (id: string, data: Prisma.ProjectUpdateInput): Promise<Project> => {
+    return await prisma.project.update({ where: { id }, data });
 };
 
 /**
  * Soft delete project by ID
- * @param id - Project ID
- * @returns Soft-deleted project
  */
 export const softDelete = async (id: string): Promise<Project> => {
     return await prisma.project.update({
@@ -191,39 +181,11 @@ export const softDelete = async (id: string): Promise<Project> => {
 };
 
 /**
- * Add skill to project
- * @param project_id - Project ID
- * @param skill_id - Skill ID
- * @returns Created ProjectSkill
+ * Restore soft-deleted project
  */
-export const addSkill = async (
-    project_id: string,
-    skill_id: string
-): Promise<void> => {
-    await prisma.projectSkill.create({
-        data: {
-            project_id,
-            skill_id,
-        },
+export const restore = async (id: string): Promise<Project> => {
+    return await prisma.project.update({
+        where: { id },
+        data: { deleted_at: null },
     });
 };
-
-/**
- * Remove skill from project
- * @param project_id - Project ID
- * @param skill_id - Skill ID
- */
-export const removeSkill = async (
-    project_id: string,
-    skill_id: string
-): Promise<void> => {
-    await prisma.projectSkill.delete({
-        where: {
-            project_id_skill_id: {
-                project_id,
-                skill_id,
-            },
-        },
-    });
-};
-

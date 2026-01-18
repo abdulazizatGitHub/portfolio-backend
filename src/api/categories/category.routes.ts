@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as categoryController from './category.controller';
-import { createCategorySchema, updateCategorySchema } from './category.schemas';
+import { createCategorySchema, updateCategorySchema, categoryQuerySchema } from './category.schemas';
 import { validate } from '@api/middlewares/validate.middleware';
 import { authenticate, authorize } from '@api/middlewares/auth.middleware';
 import { Role } from '@data/prisma.client';
@@ -9,10 +9,10 @@ const router = Router();
 
 /**
  * @route   GET /api/v1/categories
- * @desc    Get all categories
+ * @desc    Get all categories with pagination and filters
  * @access  Public
  */
-router.get('/', categoryController.getCategories);
+router.get('/', validate(categoryQuerySchema), categoryController.getCategories);
 
 /**
  * @route   GET /api/v1/categories/:id
@@ -20,6 +20,13 @@ router.get('/', categoryController.getCategories);
  * @access  Public
  */
 router.get('/:id', categoryController.getCategory);
+
+/**
+ * @route   GET /api/v1/categories/slug/:slug
+ * @desc    Get category by slug
+ * @access  Public
+ */
+router.get('/slug/:slug', categoryController.getCategoryBySlug);
 
 /**
  * @route   POST /api/v1/categories
@@ -45,6 +52,18 @@ router.patch(
     authorize(Role.ADMIN),
     validate(updateCategorySchema),
     categoryController.updateCategory
+);
+
+/**
+ * @route   PATCH /api/v1/categories/:id/restore
+ * @desc    Restore a soft-deleted category
+ * @access  Private (Admin)
+ */
+router.patch(
+    '/:id/restore',
+    authenticate,
+    authorize(Role.ADMIN),
+    categoryController.restoreCategory
 );
 
 /**

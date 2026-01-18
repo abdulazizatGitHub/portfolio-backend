@@ -1,6 +1,6 @@
 import * as categoryService from '../../../src/core/services/category.service';
 import * as categoryRepository from '../../../src/data/repositories/category.repository';
-import { NotFoundError } from '../../../src/core/exceptions/app-errors';
+import { NotFoundError, ConflictError } from '../../../src/core/exceptions/app-errors';
 import { Category } from '../../../src/data/prisma.client';
 
 jest.mock('../../../src/data/repositories/category.repository');
@@ -22,11 +22,15 @@ describe('Category Service', () => {
     });
 
     describe('getAllCategories', () => {
-        it('should return all categories', async () => {
+        it('should return categories and total count', async () => {
             (categoryRepository.findAll as jest.Mock).mockResolvedValue([mockCategory]);
-            const categories = await categoryService.getAllCategories();
-            expect(categories).toHaveLength(1);
-            expect(categories[0]).toEqual(mockCategory);
+            (categoryRepository.count as jest.Mock).mockResolvedValue(1);
+
+            const result = await categoryService.getAllCategories({ page: 1, limit: 10 });
+
+            expect(result.categories).toEqual([mockCategory]);
+            expect(result.total).toBe(1);
+            expect(categoryRepository.findAll).toHaveBeenCalledWith(expect.objectContaining({ skip: 0, take: 10 }));
         });
     });
 
@@ -43,23 +47,57 @@ describe('Category Service', () => {
         });
     });
 
-    describe('createCategory', () => {
-        it('should create a new category', async () => {
-            const createData = { name: 'New', slug: 'new' };
-            (categoryRepository.create as jest.Mock).mockResolvedValue({ ...mockCategory, ...createData });
-            const category = await categoryService.createCategory(createData);
-            expect(category.name).toBe(createData.name);
-            expect(categoryRepository.create).toHaveBeenCalledWith(createData);
+    describe('getCategoryBySlug', () => {
+        it('should return a category by slug', async () => {
+            (categoryRepository.findBySlug as jest.Mock).mockResolvedValue(mockCategory);
+            const category = await categoryService.getCategoryBySlug('web-dev');
+            expect(category).toEqual(mockCategory);
         });
     });
 
-    describe('updateCategory', () => {
-        it('should update an existing category', async () => {
-            (categoryRepository.findById as jest.Mock).mockResolvedValue(mockCategory);
-            (categoryRepository.update as jest.Mock).mockResolvedValue({ ...mockCategory, name: 'Updated' });
+    describe('createCategory', () => {
+        it('should create a new category with provided slug', async () => {
+            const createData = { name: 'New', slug: 'provided-slug' };
+            (categoryRepository.findBySlug as jest.Mock).mockResolvedValue(null);
+            (categoryRepository.create as jest.Mock).mockResolvedValue({ ...mockCategory, ...createData });
 
-            const category = await categoryService.updateCategory('cat-123', { name: 'Updated' });
-            expect(category.name).toBe('Updated');
+            const category = await categoryService.createCategory(createData);
+            expect(category.slug).toBe('provided-slug');
+            expect(categoryRepository.create).toHaveBeenCalledWith(expect.objectContaining({ slug: 'provided-slug' }));
+        });
+
+        it('should auto-generate slug from name if not provided', async () => {
+            const createData = { name: 'Auto Generated' };
+            (categoryRepository.findBySlug as jest.Mock).mockResolvedValue(null);
+            (categoryRepository.create as jest.Mock).mockResolvedValue({ ...mockCategory, name: 'Auto Generated', slug: 'auto-generated' });
+
+            const category = await categoryService.createCategory(createData);
+            expect(category.slug).toBe('auto-generated');
+            expect(categoryRepository.create).toHaveBeenCalledWith(expect.objectContaining({ slug: 'auto-generated' }));
+        });
+
+        it('should throw ConflictError if slug already exists', async () => {
+            (categoryRepository.findBySlug as jest.Mock).mockResolvedValue(mockCategory);
+            await expect(categoryService.createCategory({ name: 'Web Development' })).rejects.toThrow(ConflictError);
+        });
+    });
+
+    describe('restoreCategory', () => {
+        it('should restore a soft-deleted category', async () => {
+            const deletedCategory = { ...mockCategory, deleted_at: new Date() };
+            (categoryRepository.findById as jest.Mock).mockResolvedValue(deletedCategory);
+            (categoryRepository.restore as jest.Mock).mockResolvedValue(mockCategory);
+
+            const result = await categoryService.restoreCategory('cat-123');
+            expect(result.deleted_at).toBeNull();
+            expect(categoryRepository.restore).toHaveBeenCalledWith('cat-123');
+        });
+
+        it('should return category directly if not deleted', async () => {
+            (categoryRepository.findById as jest.Mock).mockResolvedValue(mockCategory);
+            const result = await categoryService.restoreCategory('cat-123');
+            expect(result).toEqual(mockCategory);
+            expect(categoryRepository.restore).not.toHaveBeenCalled();
         });
     });
 
@@ -70,6 +108,7 @@ describe('Category Service', () => {
 
             const category = await categoryService.deleteCategory('cat-123');
             expect(category.deleted_at).not.toBeNull();
+            expect(categoryRepository.softDelete).toHaveBeenCalledWith('cat-123');
         });
     });
 });

@@ -13,7 +13,7 @@ describe('Skill Integration Tests', () => {
         app = createApp();
 
         // Clean up
-        await prisma.skill.deleteMany({ where: { slug: { startsWith: 'test-' } } });
+        await prisma.skill.deleteMany({ where: { name: { startsWith: 'Test' } } });
         await prisma.user.deleteMany({ where: { email: { startsWith: 'test-' } } });
 
         // Create admin
@@ -29,12 +29,13 @@ describe('Skill Integration Tests', () => {
     });
 
     afterAll(async () => {
-        await prisma.skill.deleteMany({ where: { slug: { startsWith: 'test-' } } });
+        await prisma.skill.deleteMany({ where: { name: { startsWith: 'Test' } } });
         await prisma.user.deleteMany({ where: { email: { startsWith: 'test-' } } });
         await prisma.$disconnect();
     });
 
     let skillId: string;
+    let skillSlug: string;
 
     describe('POST /api/v1/skills', () => {
         it('should create a skill when authenticated as admin', async () => {
@@ -42,23 +43,35 @@ describe('Skill Integration Tests', () => {
                 .post('/api/v1/skills')
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({
-                    name: 'Test Skill',
-                    slug: 'test-skill',
+                    name: 'Test Skill One',
+                    slug: 'test-skill-one',
                     category: 'Frontend',
                     icon_url: 'https://example.com/icon.png'
                 });
 
             expect(response.status).toBe(201);
-            expect(response.body.data.skill.name).toBe('Test Skill');
-            skillId = response.body.data.skill.id;
+            expect(response.body.success).toBe(true);
+            expect(response.body.data.name).toBe('Test Skill One');
+            skillId = response.body.data.id;
+            skillSlug = response.body.data.slug;
         });
 
-        it('should return 422 for invalid slug', async () => {
+        it('should auto-generate slug if not provided', async () => {
+            const response = await request(app)
+                .post('/api/v1/skills')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({ name: 'Test Auto Skill' });
+
+            expect(response.status).toBe(201);
+            expect(response.body.data.slug).toBe('test-auto-skill');
+        });
+
+        it('should return 422 for invalid slug format', async () => {
             const response = await request(app)
                 .post('/api/v1/skills')
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({
-                    name: 'Test Skill',
+                    name: 'Test Skill Fail',
                     slug: 'INVALID SLUG'
                 });
 
@@ -67,18 +80,41 @@ describe('Skill Integration Tests', () => {
     });
 
     describe('GET /api/v1/skills', () => {
-        it('should return all skills publicly', async () => {
-            const response = await request(app).get('/api/v1/skills');
+        it('should return skills with pagination and meta', async () => {
+            const response = await request(app).get('/api/v1/skills?page=1&limit=2');
             expect(response.status).toBe(200);
-            expect(Array.isArray(response.body.data.skills)).toBe(true);
+            expect(response.body.success).toBe(true);
+            expect(Array.isArray(response.body.data)).toBe(true);
+            expect(response.body.meta).toBeDefined();
+            expect(response.body.meta.page).toBe(1);
+        });
+
+        it('should support category filter', async () => {
+            const response = await request(app).get('/api/v1/skills?category=Frontend');
+            expect(response.status).toBe(200);
+            expect(response.body.data.every((s: any) => s.category === 'Frontend')).toBe(true);
+        });
+
+        it('should support search', async () => {
+            const response = await request(app).get('/api/v1/skills?search=One');
+            expect(response.status).toBe(200);
+            expect(response.body.data.some((s: any) => s.name.includes('One'))).toBe(true);
         });
     });
 
     describe('GET /api/v1/skills/:id', () => {
-        it('should return a single skill publicly', async () => {
+        it('should return a single skill', async () => {
             const response = await request(app).get(`/api/v1/skills/${skillId}`);
             expect(response.status).toBe(200);
-            expect(response.body.data.skill.id).toBe(skillId);
+            expect(response.body.data.id).toBe(skillId);
+        });
+    });
+
+    describe('GET /api/v1/skills/slug/:slug', () => {
+        it('should return a single skill by slug', async () => {
+            const response = await request(app).get(`/api/v1/skills/slug/${skillSlug}`);
+            expect(response.status).toBe(200);
+            expect(response.body.data.slug).toBe(skillSlug);
         });
     });
 
@@ -87,10 +123,10 @@ describe('Skill Integration Tests', () => {
             const response = await request(app)
                 .patch(`/api/v1/skills/${skillId}`)
                 .set('Authorization', `Bearer ${adminToken}`)
-                .send({ name: 'Updated Skill Name' });
+                .send({ name: 'Test Updated Skill' });
 
             expect(response.status).toBe(200);
-            expect(response.body.data.skill.name).toBe('Updated Skill Name');
+            expect(response.body.data.name).toBe('Test Updated Skill');
         });
     });
 
@@ -101,6 +137,9 @@ describe('Skill Integration Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`);
 
             expect(response.status).toBe(204);
+
+            const check = await request(app).get(`/api/v1/skills/${skillId}`);
+            expect(check.status).toBe(404);
         });
     });
 });

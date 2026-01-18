@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../../src/data/prisma.client';
 import * as UserRepository from '../../../src/data/repositories/user.repository';
-
-const prisma = new PrismaClient();
 
 describe('User Repository', () => {
     beforeAll(async () => {
@@ -157,8 +155,8 @@ describe('User Repository', () => {
             const users = await UserRepository.findAll();
 
             expect(users).toHaveLength(2);
-            expect(users[0].email).toBe('user2@example.com'); // Most recent first
-            expect(users[1].email).toBe('user1@example.com');
+            expect(users[0]!.email).toBe('user2@example.com'); // Most recent first
+            expect(users[1]!.email).toBe('user1@example.com');
         });
     });
 });

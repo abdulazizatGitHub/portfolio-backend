@@ -186,6 +186,95 @@ exports.Prisma.ProjectSkillScalarFieldEnum = {
   created_at: 'created_at'
 };
 
+exports.Prisma.PersonalContentScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  title_prefix: 'title_prefix',
+  description: 'description',
+  cv_file_path: 'cv_file_path',
+  cv_download_name: 'cv_download_name',
+  updated_at: 'updated_at'
+};
+
+exports.Prisma.JobRoleScalarFieldEnum = {
+  id: 'id',
+  label: 'label',
+  order_index: 'order_index',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+};
+
+exports.Prisma.AboutContentScalarFieldEnum = {
+  id: 'id',
+  role_title: 'role_title',
+  updated_at: 'updated_at'
+};
+
+exports.Prisma.AboutParagraphScalarFieldEnum = {
+  id: 'id',
+  content: 'content',
+  order_index: 'order_index',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+};
+
+exports.Prisma.StatScalarFieldEnum = {
+  id: 'id',
+  label: 'label',
+  value: 'value',
+  context: 'context',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+};
+
+exports.Prisma.EducationEntryScalarFieldEnum = {
+  id: 'id',
+  period: 'period',
+  title: 'title',
+  description: 'description',
+  order_index: 'order_index',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+};
+
+exports.Prisma.ExperienceEntryScalarFieldEnum = {
+  id: 'id',
+  period: 'period',
+  title: 'title',
+  description: 'description',
+  order_index: 'order_index',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+};
+
+exports.Prisma.ContactContentScalarFieldEnum = {
+  id: 'id',
+  subtitle: 'subtitle',
+  success_title: 'success_title',
+  success_message: 'success_message',
+  updated_at: 'updated_at'
+};
+
+exports.Prisma.ContactInfoItemScalarFieldEnum = {
+  id: 'id',
+  type: 'type',
+  label: 'label',
+  value: 'value',
+  href: 'href',
+  order_index: 'order_index',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+};
+
+exports.Prisma.SocialLinkScalarFieldEnum = {
+  id: 'id',
+  platform: 'platform',
+  url: 'url',
+  order_index: 'order_index',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -211,7 +300,17 @@ exports.Prisma.ModelName = {
   Skill: 'Skill',
   Project: 'Project',
   Image: 'Image',
-  ProjectSkill: 'ProjectSkill'
+  ProjectSkill: 'ProjectSkill',
+  PersonalContent: 'PersonalContent',
+  JobRole: 'JobRole',
+  AboutContent: 'AboutContent',
+  AboutParagraph: 'AboutParagraph',
+  Stat: 'Stat',
+  EducationEntry: 'EducationEntry',
+  ExperienceEntry: 'ExperienceEntry',
+  ContactContent: 'ContactContent',
+  ContactInfoItem: 'ContactInfoItem',
+  SocialLink: 'SocialLink'
 };
 
 /**

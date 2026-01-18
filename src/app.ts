@@ -15,6 +15,10 @@ import authRoutes from '@api/auth/auth.routes';
 import categoryRoutes from '@api/categories/category.routes';
 import skillRoutes from '@api/skills/skill.routes';
 import projectRoutes from '@api/projects/project.routes';
+import personalRoutes from '@api/personal/personal.routes';
+import aboutRoutes from '@api/about/about.routes';
+import timelineRoutes from '@api/timeline/timeline.routes';
+import contactRoutes from '@api/contact/contact.routes';
 
 /**
  * Create and configure Express application
@@ -74,6 +78,10 @@ export const createApp = (): Application => {
     app.use('/api/v1/categories', categoryRoutes);
     app.use('/api/v1/skills', skillRoutes);
     app.use('/api/v1/projects', projectRoutes);
+    app.use('/api/v1/personal', personalRoutes);
+    app.use('/api/v1/about', aboutRoutes);
+    app.use('/api/v1/timeline', timelineRoutes);
+    app.use('/api/v1/contact', contactRoutes);
 
     // API routes will be added here in future phases
     // app.use('/api/v1', apiRoutes);

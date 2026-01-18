@@ -7,21 +7,8 @@ import { ZodError } from 'zod';
 /**
  * Standardized error response interface
  */
-interface ErrorResponse {
-    status: 'error';
-    code: string;
-    message: string;
-    stack?: string;
-}
-
 /**
  * Global error handling middleware
- * Handles all errors thrown in the application and returns standardized error responses
- *
- * @param err - Error object
- * @param req - Express request object
- * @param res - Express response object
- * @param next - Express next function
  */
 export const errorHandler = (
     err: Error,
@@ -94,10 +81,11 @@ export const errorHandler = (
     }
 
     // Construct error response
-    const errorResponse: ErrorResponse = {
-        status: 'error',
-        code,
+    const errorResponse: any = {
+        success: false,
         message,
+        code, // Keeping code for machine readability
+        errors: (err as any).errors || [],
     };
 
     // Include stack trace only in development

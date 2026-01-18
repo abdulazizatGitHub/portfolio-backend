@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../../src/data/prisma.client';
 import * as CategoryRepository from '../../../src/data/repositories/category.repository';
-
-const prisma = new PrismaClient();
 
 describe('Category Repository', () => {
     beforeAll(async () => {
@@ -59,8 +57,8 @@ describe('Category Repository', () => {
             const categories = await CategoryRepository.findAll();
 
             expect(categories).toHaveLength(2);
-            expect(categories[0].slug).toBe('category-b'); // order_index 1
-            expect(categories[1].slug).toBe('category-a'); // order_index 2
+            expect(categories[0]!.slug).toBe('category-b'); // order_index 1
+            expect(categories[1]!.slug).toBe('category-a'); // order_index 2
         });
     });
 

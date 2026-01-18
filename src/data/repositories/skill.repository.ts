@@ -6,19 +6,63 @@ import { prisma, Skill, Prisma } from '../prisma.client';
  */
 
 /**
- * Find all skills
- * @returns Array of skills ordered by name
+ * Find all skills with advanced options
  */
-export const findAll = async (): Promise<Skill[]> => {
+export const findAll = async (options: {
+    skip?: number;
+    take?: number;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    category?: string;
+} = {}): Promise<Skill[]> => {
+    const {
+        skip,
+        take,
+        search,
+        sortBy = 'name',
+        sortOrder = 'asc',
+        category,
+    } = options;
+
+    const where: Prisma.SkillWhereInput = {
+        category: category ?? undefined,
+        OR: search ? [
+            { name: { contains: search, mode: 'insensitive' } },
+            { slug: { contains: search, mode: 'insensitive' } },
+        ] : undefined,
+    };
+
     return await prisma.skill.findMany({
-        orderBy: { name: 'asc' },
+        where,
+        skip,
+        take,
+        orderBy: { [sortBy]: sortOrder },
     });
 };
 
 /**
+ * Count skills based on filters
+ */
+export const count = async (options: {
+    search?: string;
+    category?: string;
+} = {}): Promise<number> => {
+    const { search, category } = options;
+
+    const where: Prisma.SkillWhereInput = {
+        category: category ?? undefined,
+        OR: search ? [
+            { name: { contains: search, mode: 'insensitive' } },
+            { slug: { contains: search, mode: 'insensitive' } },
+        ] : undefined,
+    };
+
+    return await prisma.skill.count({ where });
+};
+
+/**
  * Find skill by ID
- * @param id - Skill ID
- * @returns Skill or null if not found
  */
 export const findById = async (id: string): Promise<Skill | null> => {
     return await prisma.skill.findUnique({
@@ -28,8 +72,6 @@ export const findById = async (id: string): Promise<Skill | null> => {
 
 /**
  * Find skill by slug
- * @param slug - Skill slug
- * @returns Skill or null if not found
  */
 export const findBySlug = async (slug: string): Promise<Skill | null> => {
     return await prisma.skill.findUnique({
@@ -38,54 +80,32 @@ export const findBySlug = async (slug: string): Promise<Skill | null> => {
 };
 
 /**
- * Find skills by category
- * @param category - Skill category (e.g., "Frontend", "Backend")
- * @returns Array of skills in the category
+ * Find skill by name
  */
-export const findByCategory = async (category: string): Promise<Skill[]> => {
-    return await prisma.skill.findMany({
-        where: { category },
-        orderBy: { name: 'asc' },
+export const findByName = async (name: string): Promise<Skill | null> => {
+    return await prisma.skill.findFirst({
+        where: { name: { equals: name, mode: 'insensitive' } },
     });
 };
 
 /**
  * Create a new skill
- * @param data - Skill creation data
- * @returns Created skill
  */
-export const create = async (
-    data: Prisma.SkillCreateInput
-): Promise<Skill> => {
-    return await prisma.skill.create({
-        data,
-    });
+export const create = async (data: Prisma.SkillCreateInput): Promise<Skill> => {
+    return await prisma.skill.create({ data });
 };
 
 /**
  * Update skill by ID
- * @param id - Skill ID
- * @param data - Skill update data
- * @returns Updated skill
  */
-export const update = async (
-    id: string,
-    data: Prisma.SkillUpdateInput
-): Promise<Skill> => {
-    return await prisma.skill.update({
-        where: { id },
-        data,
-    });
+export const update = async (id: string, data: Prisma.SkillUpdateInput): Promise<Skill> => {
+    return await prisma.skill.update({ where: { id }, data });
 };
 
 /**
  * Delete skill by ID
- * @param id - Skill ID
- * @returns Deleted skill
  */
-export const deleteSkill = async (id: string): Promise<Skill> => {
-    return await prisma.skill.delete({
-        where: { id },
-    });
+export const deleteById = async (id: string): Promise<Skill> => {
+    return await prisma.skill.delete({ where: { id } });
 };
 

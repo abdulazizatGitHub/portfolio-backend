@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as skillController from './skill.controller';
-import { createSkillSchema, updateSkillSchema } from './skill.schemas';
+import { createSkillSchema, updateSkillSchema, skillQuerySchema } from './skill.schemas';
 import { validate } from '@api/middlewares/validate.middleware';
 import { authenticate, authorize } from '@api/middlewares/auth.middleware';
 import { Role } from '@data/prisma.client';
@@ -9,10 +9,10 @@ const router = Router();
 
 /**
  * @route   GET /api/v1/skills
- * @desc    Get all skills
+ * @desc    Get all skills with pagination and filters
  * @access  Public
  */
-router.get('/', skillController.getSkills);
+router.get('/', validate(skillQuerySchema), skillController.getSkills);
 
 /**
  * @route   GET /api/v1/skills/:id
@@ -20,6 +20,13 @@ router.get('/', skillController.getSkills);
  * @access  Public
  */
 router.get('/:id', skillController.getSkill);
+
+/**
+ * @route   GET /api/v1/skills/slug/:slug
+ * @desc    Get skill by slug
+ * @access  Public
+ */
+router.get('/slug/:slug', skillController.getSkillBySlug);
 
 /**
  * @route   POST /api/v1/skills

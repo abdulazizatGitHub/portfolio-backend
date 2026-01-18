@@ -1,6 +1,6 @@
 import * as skillService from '../../../src/core/services/skill.service';
 import * as skillRepository from '../../../src/data/repositories/skill.repository';
-import { NotFoundError } from '../../../src/core/exceptions/app-errors';
+import { NotFoundError, ConflictError } from '../../../src/core/exceptions/app-errors';
 import { Skill } from '../../../src/data/prisma.client';
 
 jest.mock('../../../src/data/repositories/skill.repository');
@@ -21,11 +21,15 @@ describe('Skill Service', () => {
     });
 
     describe('getAllSkills', () => {
-        it('should return all skills', async () => {
+        it('should return skills and total count', async () => {
             (skillRepository.findAll as jest.Mock).mockResolvedValue([mockSkill]);
-            const skills = await skillService.getAllSkills();
-            expect(skills).toHaveLength(1);
-            expect(skills[0]).toEqual(mockSkill);
+            (skillRepository.count as jest.Mock).mockResolvedValue(1);
+
+            const result = await skillService.getAllSkills({ page: 1, limit: 10 });
+
+            expect(result.skills).toEqual([mockSkill]);
+            expect(result.total).toBe(1);
+            expect(skillRepository.findAll).toHaveBeenCalledWith(expect.objectContaining({ skip: 0, take: 10 }));
         });
     });
 
@@ -42,34 +46,50 @@ describe('Skill Service', () => {
         });
     });
 
-    describe('createSkill', () => {
-        it('should create a new skill', async () => {
-            const createData = { name: 'Node.js', slug: 'nodejs' };
-            (skillRepository.create as jest.Mock).mockResolvedValue({ ...mockSkill, ...createData });
-            const skill = await skillService.createSkill(createData);
-            expect(skill.name).toBe(createData.name);
-            expect(skillRepository.create).toHaveBeenCalledWith(createData);
+    describe('getSkillBySlug', () => {
+        it('should return a skill by slug', async () => {
+            (skillRepository.findBySlug as jest.Mock).mockResolvedValue(mockSkill);
+            const skill = await skillService.getSkillBySlug('typescript');
+            expect(skill).toEqual(mockSkill);
         });
     });
 
-    describe('updateSkill', () => {
-        it('should update an existing skill', async () => {
-            (skillRepository.findById as jest.Mock).mockResolvedValue(mockSkill);
-            (skillRepository.update as jest.Mock).mockResolvedValue({ ...mockSkill, name: 'Updated' });
+    describe('createSkill', () => {
+        it('should create a new skill with provided slug', async () => {
+            const createData = { name: 'Node.js', slug: 'nodejs' };
+            (skillRepository.findByName as jest.Mock).mockResolvedValue(null);
+            (skillRepository.findBySlug as jest.Mock).mockResolvedValue(null);
+            (skillRepository.create as jest.Mock).mockResolvedValue({ ...mockSkill, ...createData });
 
-            const skill = await skillService.updateSkill('skill-123', { name: 'Updated' });
-            expect(skill.name).toBe('Updated');
+            const skill = await skillService.createSkill(createData);
+            expect(skill.slug).toBe('nodejs');
+            expect(skillRepository.create).toHaveBeenCalledWith(expect.objectContaining({ slug: 'nodejs' }));
+        });
+
+        it('should auto-generate slug from name if not provided', async () => {
+            const createData = { name: 'Auto Skill' };
+            (skillRepository.findByName as jest.Mock).mockResolvedValue(null);
+            (skillRepository.findBySlug as jest.Mock).mockResolvedValue(null);
+            (skillRepository.create as jest.Mock).mockResolvedValue({ ...mockSkill, name: 'Auto Skill', slug: 'auto-skill' });
+
+            const skill = await skillService.createSkill(createData);
+            expect(skill.slug).toBe('auto-skill');
+        });
+
+        it('should throw ConflictError if name or slug already exists', async () => {
+            (skillRepository.findByName as jest.Mock).mockResolvedValue(mockSkill);
+            await expect(skillService.createSkill({ name: 'TypeScript' })).rejects.toThrow(ConflictError);
         });
     });
 
     describe('deleteSkill', () => {
         it('should delete a skill', async () => {
             (skillRepository.findById as jest.Mock).mockResolvedValue(mockSkill);
-            (skillRepository.deleteSkill as jest.Mock).mockResolvedValue(mockSkill);
+            (skillRepository.deleteById as jest.Mock).mockResolvedValue(mockSkill);
 
             const skill = await skillService.deleteSkill('skill-123');
             expect(skill).toEqual(mockSkill);
-            expect(skillRepository.deleteSkill).toHaveBeenCalledWith('skill-123');
+            expect(skillRepository.deleteById).toHaveBeenCalledWith('skill-123');
         });
     });
 });

@@ -14,10 +14,10 @@ export const validate = (schema: AnyZodObject) => {
                 params: req.params,
             });
 
-            // Update request with parsed/transformed data
-            req.body = parsed.body;
-            req.query = parsed.query;
-            req.params = parsed.params;
+            // Update request with parsed/transformed data if they were part of the schema
+            if (parsed.body !== undefined) req.body = parsed.body;
+            if (parsed.query !== undefined) req.query = parsed.query;
+            if (parsed.params !== undefined) req.params = parsed.params;
 
             next();
         } catch (error) {

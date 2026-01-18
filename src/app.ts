@@ -12,6 +12,9 @@ import {
 } from '@api/middlewares/error.middleware';
 import { healthCheck } from '@api/health.controller';
 import authRoutes from '@api/auth/auth.routes';
+import categoryRoutes from '@api/categories/category.routes';
+import skillRoutes from '@api/skills/skill.routes';
+import projectRoutes from '@api/projects/project.routes';
 
 /**
  * Create and configure Express application
@@ -68,6 +71,9 @@ export const createApp = (): Application => {
 
     // API routes
     app.use('/api/v1/auth', authRoutes);
+    app.use('/api/v1/categories', categoryRoutes);
+    app.use('/api/v1/skills', skillRoutes);
+    app.use('/api/v1/projects', projectRoutes);
 
     // API routes will be added here in future phases
     // app.use('/api/v1', apiRoutes);

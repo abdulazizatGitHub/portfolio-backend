@@ -11,6 +11,7 @@ import {
     notFoundHandler,
 } from '@api/middlewares/error.middleware';
 import { healthCheck } from '@api/health.controller';
+import authRoutes from '@api/auth/auth.routes';
 
 /**
  * Create and configure Express application
@@ -64,6 +65,9 @@ export const createApp = (): Application => {
 
     // Health check endpoint
     app.get('/health', healthCheck);
+
+    // API routes
+    app.use('/api/v1/auth', authRoutes);
 
     // API routes will be added here in future phases
     // app.use('/api/v1', apiRoutes);

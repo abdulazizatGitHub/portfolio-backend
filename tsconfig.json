@@ -7,21 +7,24 @@
         ],
         /* Modules */
         "module": "commonjs",
-        "rootDir": "./src",
+        "rootDir": ".",
         "moduleResolution": "node",
-        "baseUrl": "./src",
+        "baseUrl": ".",
         "paths": {
+            "@/*": [
+                "src/*"
+            ],
             "@api/*": [
-                "api/*"
+                "src/api/*"
             ],
             "@core/*": [
-                "core/*"
+                "src/core/*"
             ],
             "@data/*": [
-                "data/*"
+                "src/data/*"
             ],
             "@utils/*": [
-                "utils/*"
+                "src/utils/*"
             ]
         },
         "resolveJsonModule": true,
@@ -47,15 +50,21 @@
         "noImplicitReturns": true,
         "noFallthroughCasesInSwitch": true,
         "noUncheckedIndexedAccess": true,
+        /* Testing */
+        "types": [
+            "jest",
+            "node"
+        ],
         /* Completeness */
         "skipLibCheck": true
     },
     "include": [
-        "src/**/*"
+        "src/**/*",
+        "tests/**/*",
+        "prisma/**/*"
     ],
     "exclude": [
         "node_modules",
-        "dist",
-        "tests"
+        "dist"
     ]
 }

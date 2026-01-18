@@ -1,5 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from './generated-client';
 import { logger } from '@utils/logger';
+
+// Re-export model types for easier access
+export * from './generated-client';
 
 /**
  * PrismaClient singleton instance

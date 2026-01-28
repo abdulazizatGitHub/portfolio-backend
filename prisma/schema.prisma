@@ -57,6 +57,7 @@ model Skill {
   slug       String   @unique
   icon_url   String?
   category   String?  // e.g., "Frontend", "Backend", "DevOps"
+  level      Int      @default(0) // 0-100 percentage
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
@@ -131,13 +132,14 @@ model ProjectSkill {
 // Personal Content
 // ====================
 model PersonalContent {
-  id               String   @id @default(uuid())
-  name             String
-  title_prefix     String
-  description      String   @db.Text
-  cv_file_path     String
-  cv_download_name String
-  updated_at       DateTime @updatedAt
+  id                String   @id @default(uuid())
+  name              String
+  title_prefix      String
+  description       String   @db.Text
+  profile_image_url String?  // Path to profile/hero image
+  cv_file_path      String
+  cv_download_name  String
+  updated_at        DateTime @updatedAt
 
   @@map("personal_content")
 }
@@ -157,9 +159,12 @@ model JobRole {
 // About Content
 // ====================
 model AboutContent {
-  id         String   @id @default(uuid())
-  role_title String
-  updated_at DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  role_title         String
+  heading_prefix     String   @default("About")
+  heading_highlight  String   @default("Me")
+  portrait_image_url String?  // Path to about portrait image
+  updated_at         DateTime @updatedAt
 
   @@map("about_content")
 }
@@ -220,11 +225,13 @@ model ExperienceEntry {
 // Contact Content
 // ====================
 model ContactContent {
-  id              String   @id @default(uuid())
-  subtitle        String
-  success_title   String
-  success_message String   @db.Text
-  updated_at      DateTime @updatedAt
+  id               String   @id @default(uuid())
+  subtitle         String
+  info_title       String   @default("Contact Information")
+  info_description String   @default("Feel free to reach out to me through any of the following channels:")
+  success_title    String
+  success_message  String   @db.Text
+  updated_at       DateTime @updatedAt
 
   @@map("contact_content")
 }
@@ -253,4 +260,51 @@ model SocialLink {
 
   @@index([order_index])
   @@map("social_links")
+}
+// ====================
+// Analytics & Tracking
+// ====================
+model PageVisit {
+  id         String   @id @default(uuid())
+  path       String   // e.g., "/", "/projects/slug"
+  ip_hash    String?  // For unique visitor tracking (anonymized)
+  user_agent String?
+  referer    String?
+  device     String?  // 'mobile' | 'desktop' | 'tablet'
+  browser    String?
+  os         String?
+  created_at DateTime @default(now())
+
+  @@index([path])
+  @@index([created_at])
+  @@map("page_visits")
+}
+
+model EventLog {
+  id         String   @id @default(uuid())
+  event_type String   // e.g., "cv_download", "social_click"
+  category   String?  // e.g., "engagement", "navigation"
+  label      String?  // e.g., "LinkedIn", "Resume.pdf"
+  metadata   Json?    // Flexible extra data
+  created_at DateTime @default(now())
+
+  @@index([event_type])
+  @@index([created_at])
+  @@map("event_logs")
+}
+
+// [NEW] ActivityLog for administrative actions
+model ActivityLog {
+  id          String   @id @default(uuid())
+  user_id     String   // The admin who performed the action
+  action      String   // e.g., "CREATE", "UPDATE", "DELETE", "PUBLISH"
+  entity_type String   // e.g., "project", "skill", "experience"
+  entity_id   String?
+  entity_name String?  // e.g., "Laboratory Management System"
+  description String   // Human readable description
+  created_at  DateTime @default(now())
+
+  @@index([user_id])
+  @@index([created_at])
+  @@map("activity_logs")
 }

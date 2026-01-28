@@ -6,6 +6,9 @@ import { z } from 'zod';
 export const aboutContentSchema = z.object({
     body: z.object({
         role_title: z.string().trim().min(1, 'Role title is required').max(100),
+        heading_prefix: z.string().trim().max(50).optional(),
+        heading_highlight: z.string().trim().max(50).optional(),
+        portrait_image_url: z.string().trim().max(255).optional().nullable(),
     }),
 });
 

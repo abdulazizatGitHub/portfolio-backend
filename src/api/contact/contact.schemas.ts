@@ -6,6 +6,8 @@ import { z } from 'zod';
 export const contactContentSchema = z.object({
     body: z.object({
         subtitle: z.string().trim().min(1, 'Subtitle is required').max(100),
+        info_title: z.string().trim().max(100).optional(),
+        info_description: z.string().trim().max(500).optional(),
         success_title: z.string().trim().min(1, 'Success title is required').max(100),
         success_message: z.string().trim().min(10, 'Success message must be at least 10 characters'),
     }),

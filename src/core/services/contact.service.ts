@@ -31,11 +31,17 @@ export const getContactData = async (): Promise<ContactContent & { infoItems: Co
 /**
  * Update or create contact metadata
  */
-export const updateContactContent = async (data: any): Promise<ContactContent> => {
+export const updateContactContent = async (data: {
+    subtitle?: string;
+    info_title?: string;
+    info_description?: string;
+    success_title?: string;
+    success_message?: string;
+}): Promise<ContactContent> => {
     const existing = await contactRepository.findFirst();
 
     if (!existing) {
-        return await contactRepository.create(data);
+        return await contactRepository.create(data as any);
     }
 
     return await contactRepository.update(existing.id, data);
@@ -44,6 +50,17 @@ export const updateContactContent = async (data: any): Promise<ContactContent> =
 // --- Info Items ---
 
 export const getAllInfoItems = () => infoRepository.findAll();
+
+/**
+ * Get contact info item by ID
+ */
+export const getInfoItemById = async (id: string): Promise<ContactInfoItem> => {
+    const item = await infoRepository.findById(id);
+    if (!item) {
+        throw new NotFoundError('Contact info item not found');
+    }
+    return item;
+};
 
 export const createInfoItem = (data: any) => infoRepository.create(data);
 
@@ -62,6 +79,17 @@ export const deleteInfoItem = async (id: string) => {
 // --- Social Links ---
 
 export const getAllSocialLinks = () => socialRepository.findAll();
+
+/**
+ * Get social link by ID
+ */
+export const getSocialLinkById = async (id: string): Promise<SocialLink> => {
+    const link = await socialRepository.findById(id);
+    if (!link) {
+        throw new NotFoundError('Social link not found');
+    }
+    return link;
+};
 
 export const createSocialLink = (data: any) => socialRepository.create(data);
 

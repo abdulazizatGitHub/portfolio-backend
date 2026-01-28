@@ -3,8 +3,13 @@ import * as skillController from './skill.controller';
 import { createSkillSchema, updateSkillSchema, skillQuerySchema } from './skill.schemas';
 import { validate } from '@api/middlewares/validate.middleware';
 import { authenticate, authorize } from '@api/middlewares/auth.middleware';
+import { uploadImage } from '../../core/config/multer.config';
 import { Role } from '@data/prisma.client';
 
+/**
+ * Skill Routes
+ * Path: /api/v1/skills
+ */
 const router = Router();
 
 /**
@@ -52,6 +57,19 @@ router.patch(
     authorize(Role.ADMIN),
     validate(updateSkillSchema),
     skillController.updateSkill
+);
+
+/**
+ * @route   POST /api/v1/skills/:id/icon
+ * @desc    Upload skill icon
+ * @access  Private (Admin)
+ */
+router.post(
+    '/:id/icon',
+    authenticate,
+    authorize(Role.ADMIN),
+    uploadImage.single('skill-icon'),
+    skillController.uploadSkillIcon
 );
 
 /**

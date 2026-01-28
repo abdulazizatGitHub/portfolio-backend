@@ -28,6 +28,7 @@ export const createSkillSchema = z.object({
             .optional(),
         category: z.string().max(50).optional().nullable(),
         icon_url: z.string().url().max(255).optional().nullable(),
+        level: z.number().int().min(0).max(100).optional(),
     }),
 });
 
@@ -48,6 +49,7 @@ export const updateSkillSchema = z.object({
             .optional(),
         category: z.string().max(50).optional().nullable(),
         icon_url: z.string().url().max(255).optional().nullable(),
+        level: z.number().int().min(0).max(100).optional(),
     }),
 });
 

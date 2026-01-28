@@ -31,11 +31,16 @@ export const getAboutData = async (): Promise<AboutContent & { paragraphs: About
 /**
  * Update or create about metadata
  */
-export const updateAboutContent = async (data: { role_title: string }): Promise<AboutContent> => {
+export const updateAboutContent = async (data: {
+    role_title?: string;
+    heading_prefix?: string;
+    heading_highlight?: string;
+    portrait_image_url?: string | null;
+}): Promise<AboutContent> => {
     const existing = await aboutRepository.findFirst();
 
     if (!existing) {
-        return await aboutRepository.create(data);
+        return await aboutRepository.create(data as any);
     }
 
     return await aboutRepository.update(existing.id, data);

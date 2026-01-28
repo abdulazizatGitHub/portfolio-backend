@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as aboutService from '../../core/services/about.service';
 import { sendSuccess } from '../../utils/response';
+import { ActivityService, ActivityAction } from '@core/services/activity.service';
 
 /**
  * About Controller
@@ -25,6 +26,17 @@ export const getAbout = async (_req: Request, res: Response, next: NextFunction)
 export const updateAbout = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const updated = await aboutService.updateAboutContent(req.body);
+
+        // Log activity
+        await ActivityService.log({
+            userId: (req as any).user.id,
+            action: ActivityAction.UPDATE,
+            entityType: 'about',
+            entityId: updated.id,
+            entityName: 'About Metadata',
+            description: 'Updated about section metadata and imagery',
+        });
+
         sendSuccess(res, 'About content updated', updated);
     } catch (error) {
         next(error);

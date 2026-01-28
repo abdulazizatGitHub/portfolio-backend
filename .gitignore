@@ -37,3 +37,11 @@ prisma/migrations/
 # Misc
 .eslintcache
 *.tsbuildinfo
+*.txt
+test_output.txt
+
+# Database
+src/data/generated-client/
+
+# Uploads
+uploads/

@@ -1,6 +1,8 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import * as skillService from '@core/services/skill.service';
 import { sendSuccess, sendList } from '@utils/response';
+import { BadRequestError } from '../../core/exceptions/app-errors';
+import { ActivityService, ActivityAction } from '@core/services/activity.service';
 
 /**
  * Get all skills with pagination and filters
@@ -47,6 +49,17 @@ export const getSkillBySlug = async (req: Request, res: Response) => {
  */
 export const createSkill = async (req: Request, res: Response) => {
     const skill = await skillService.createSkill(req.body);
+
+    // Log activity
+    await ActivityService.log({
+        userId: (req as any).user.id,
+        action: ActivityAction.CREATE,
+        entityType: 'skill',
+        entityId: skill.id,
+        entityName: skill.name,
+        description: `Created new skill: ${skill.name}`,
+    });
+
     return sendSuccess(res, 'Skill created successfully', skill, 201);
 };
 
@@ -56,6 +69,17 @@ export const createSkill = async (req: Request, res: Response) => {
 export const updateSkill = async (req: Request, res: Response) => {
     const id = req.params.id as string;
     const skill = await skillService.updateSkill(id, req.body);
+
+    // Log activity
+    await ActivityService.log({
+        userId: (req as any).user.id,
+        action: ActivityAction.UPDATE,
+        entityType: 'skill',
+        entityId: skill.id,
+        entityName: skill.name,
+        description: `Updated skill: ${skill.name}`,
+    });
+
     return sendSuccess(res, 'Skill updated successfully', skill);
 };
 
@@ -64,6 +88,49 @@ export const updateSkill = async (req: Request, res: Response) => {
  */
 export const deleteSkill = async (req: Request, res: Response) => {
     const id = req.params.id as string;
+    const skill = await skillService.getSkillById(id);
     await skillService.deleteSkill(id);
+
+    // Log activity
+    await ActivityService.log({
+        userId: (req as any).user.id,
+        action: ActivityAction.DELETE,
+        entityType: 'skill',
+        entityId: id,
+        entityName: skill.name,
+        description: `Deleted skill: ${skill.name}`,
+    });
+
     return res.status(204).send();
+};
+
+/**
+ * Upload skill icon
+ */
+export const uploadSkillIcon = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const id = req.params.id as string;
+        if (!req.file) {
+            throw new BadRequestError('No icon file uploaded');
+        }
+
+        const filePath = `${req.file.destination}/${req.file.filename}`.replace(/\\/g, '/');
+        const iconUrl = `/${filePath}`;
+
+        const skill = await skillService.updateSkill(id, { icon_url: iconUrl });
+
+        // Log activity
+        await ActivityService.log({
+            userId: (req as any).user.id,
+            action: ActivityAction.UPDATE,
+            entityType: 'skill',
+            entityId: skill.id,
+            entityName: skill.name,
+            description: `Updated icon for skill: ${skill.name}`,
+        });
+
+        return sendSuccess(res, 'Skill icon uploaded successfully', skill);
+    } catch (error) {
+        return next(error);
+    }
 };

@@ -8,6 +8,7 @@ export const personalSchema = z.object({
         name: z.string().trim().min(1, 'Name is required').max(100),
         title_prefix: z.string().trim().min(1, 'Title prefix is required').max(50),
         description: z.string().trim().min(10, 'Description must be at least 10 characters'),
+        profile_image_url: z.string().trim().max(255).optional().nullable(),
         cv_file_path: z.string().trim().min(1, 'CV file path is required'),
         cv_download_name: z.string().trim().min(1, 'Download name is required'),
     }),

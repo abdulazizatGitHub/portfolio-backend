@@ -19,12 +19,20 @@ import personalRoutes from '@api/personal/personal.routes';
 import aboutRoutes from '@api/about/about.routes';
 import timelineRoutes from '@api/timeline/timeline.routes';
 import contactRoutes from '@api/contact/contact.routes';
+import uploadRoutes from './api/uploads/upload.routes';
+import dashboardRoutes from './api/dashboard/dashboard.routes';
+import analyticsRoutes from './api/analytics/analytics.routes';
+import { trackVisit } from './api/middlewares/analytics.middleware';
+import path from 'path';
 
 /**
  * Create and configure Express application
  */
 export const createApp = (): Application => {
     const app = express();
+
+    // Serve static files from uploads directory
+    app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
     // ====================
     // Security Middleware
@@ -73,15 +81,22 @@ export const createApp = (): Application => {
     // Health check endpoint
     app.get('/health', healthCheck);
 
-    // API routes
+    // Analytics (Public)
+    app.use('/api/v1/analytics', analyticsRoutes);
+
+    // Public API routes (with tracking)
+    app.use('/api/v1/categories', trackVisit, categoryRoutes);
+    app.use('/api/v1/skills', trackVisit, skillRoutes);
+    app.use('/api/v1/projects', trackVisit, projectRoutes);
+    app.use('/api/v1/personal', trackVisit, personalRoutes);
+    app.use('/api/v1/about', trackVisit, aboutRoutes);
+    app.use('/api/v1/timeline', trackVisit, timelineRoutes);
+    app.use('/api/v1/contact', trackVisit, contactRoutes);
+
+    // Admin API routes
     app.use('/api/v1/auth', authRoutes);
-    app.use('/api/v1/categories', categoryRoutes);
-    app.use('/api/v1/skills', skillRoutes);
-    app.use('/api/v1/projects', projectRoutes);
-    app.use('/api/v1/personal', personalRoutes);
-    app.use('/api/v1/about', aboutRoutes);
-    app.use('/api/v1/timeline', timelineRoutes);
-    app.use('/api/v1/contact', contactRoutes);
+    app.use('/api/v1/uploads', uploadRoutes);
+    app.use('/api/v1/dashboard', dashboardRoutes);
 
     // API routes will be added here in future phases
     // app.use('/api/v1', apiRoutes);

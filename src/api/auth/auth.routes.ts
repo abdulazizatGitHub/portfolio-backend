@@ -23,9 +23,16 @@ router.post('/login', validate(loginSchema), authController.login);
 /**
  * @route   POST /api/v1/auth/refresh
  * @desc    Refresh access token
- * @access  Public (requires valid refresh token in body)
+ * @access  Public (requires valid refresh token in body or cookie)
  */
 router.post('/refresh', validate(refreshSchema), authController.refresh);
+
+/**
+ * @route   POST /api/v1/auth/logout
+ * @desc    Logout user and clear cookies
+ * @access  Public
+ */
+router.post('/logout', authController.logout);
 
 /**
  * @route   GET /api/v1/auth/me

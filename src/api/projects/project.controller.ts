@@ -6,6 +6,11 @@ import { sendSuccess, sendList } from '@utils/response';
  * Get all projects with pagination and filters
  */
 export const getProjects = async (req: Request, res: Response) => {
+    // validate() middleware has already parsed/transformed req.query per
+    // projectQuerySchema, so is_published/featured/includeDeleted arrive
+    // here as real booleans (or undefined) already — re-comparing against
+    // the string 'true'/'false' here would always be false and silently
+    // disable these filters.
     const {
         page,
         limit,
@@ -16,18 +21,28 @@ export const getProjects = async (req: Request, res: Response) => {
         is_published,
         featured,
         includeDeleted
-    } = req.query;
+    } = req.query as unknown as {
+        page?: number;
+        limit?: number;
+        search?: string;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+        category_id?: string;
+        is_published?: boolean;
+        featured?: boolean;
+        includeDeleted?: boolean;
+    };
 
     const { projects, total } = await projectService.getAllProjects({
-        page: page ? Number(page) : undefined,
-        limit: limit ? Number(limit) : undefined,
-        search: search as string,
-        sortBy: sortBy as string,
-        sortOrder: sortOrder as 'asc' | 'desc',
-        category_id: category_id as string,
-        is_published: is_published === 'true' ? true : (is_published === 'false' ? false : undefined),
-        featured: featured === 'true' ? true : (featured === 'false' ? false : undefined),
-        includeDeleted: includeDeleted === 'true',
+        page,
+        limit,
+        search,
+        sortBy,
+        sortOrder,
+        category_id,
+        is_published,
+        featured,
+        includeDeleted,
     });
 
     return sendList(res, 'Projects retrieved successfully', projects, {

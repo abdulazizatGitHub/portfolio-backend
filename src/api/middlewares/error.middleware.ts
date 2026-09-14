@@ -82,9 +82,12 @@ export const errorHandler = (
 
     // Construct error response
     const errorResponse: any = {
+        status: 'error',
         success: false,
         message,
-        code, // Keeping code for machine readability
+        code,
+        ErrorCode: statusCode,
+        ErrorMessage: message,
         errors: (err as any).errors || [],
     };
 

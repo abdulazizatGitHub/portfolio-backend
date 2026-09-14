@@ -6,6 +6,8 @@ import {
     updateEducationSchema,
     experiencePrismaSchema as experienceSchema,
     updateExperienceSchema,
+    experienceRoleSchema,
+    updateExperienceRoleSchema,
     timelineIdSchema
 } from './timeline.schemas';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
@@ -108,6 +110,34 @@ router.delete(
     authorize(Role.ADMIN),
     validate(timelineIdSchema),
     timelineController.deleteExperience
+);
+
+// ====================
+// Admin Routes (Experience Roles)
+// ====================
+
+router.post(
+    '/experience/:experienceId/roles',
+    authenticate,
+    authorize(Role.ADMIN),
+    validate(experienceRoleSchema),
+    timelineController.createExperienceRole
+);
+
+router.patch(
+    '/experience/roles/:id',
+    authenticate,
+    authorize(Role.ADMIN),
+    validate(updateExperienceRoleSchema),
+    timelineController.updateExperienceRole
+);
+
+router.delete(
+    '/experience/roles/:id',
+    authenticate,
+    authorize(Role.ADMIN),
+    validate(timelineIdSchema),
+    timelineController.deleteExperienceRole
 );
 
 export default router;

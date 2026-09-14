@@ -13,7 +13,8 @@ async function main(): Promise<void> {
     await prisma.socialLink.deleteMany();
     await prisma.contactInfoItem.deleteMany();
     await prisma.contactContent.deleteMany();
-    await prisma.experienceEntry.deleteMany();
+    await prisma.experienceRole.deleteMany();
+    await prisma.experience.deleteMany();
     await prisma.educationEntry.deleteMany();
     await prisma.stat.deleteMany();
     await prisma.aboutParagraph.deleteMany();
@@ -67,12 +68,13 @@ async function main(): Promise<void> {
     // ====================
     // 4. About & Stats
     // ====================
-    await prisma.aboutContent.create({
+    const aboutSection = await prisma.aboutContent.create({
         data: {
             role_title: 'AI/ML Engineer & Full-Stack Developer',
             heading_prefix: "About",
             heading_highlight: "Me",
-            portrait_image_url: 'https://images.unsplash.com/photo-1519085185750-74071747e99c?q=80&w=1974&auto=format&fit=crop' // Placeholder portrait
+            portrait_image_url: 'https://images.unsplash.com/photo-1519085185750-74071747e99c?q=80&w=1974&auto=format&fit=crop', // Placeholder portrait
+            order_index: 0,
         }
     });
 
@@ -84,7 +86,7 @@ async function main(): Promise<void> {
 
     await Promise.all(
         paragraphs.map((content, index) =>
-            prisma.aboutParagraph.create({ data: { content, order_index: index } })
+            prisma.aboutParagraph.create({ data: { content, order_index: index, about_content_id: aboutSection.id } })
         )
     );
 
@@ -95,8 +97,8 @@ async function main(): Promise<void> {
     ];
 
     await Promise.all(
-        stats.map(stat =>
-            prisma.stat.create({ data: { ...stat, context: 'about' } })
+        stats.map((stat, index) =>
+            prisma.stat.create({ data: { ...stat, order_index: index, about_content_id: aboutSection.id } })
         )
     );
     console.log('✓ Created About Section and Stats');
@@ -129,26 +131,63 @@ async function main(): Promise<void> {
 
     const experience = [
         {
-            period: 'Oct 2025 - Present',
-            title: 'Frontend Developer - Inara Technologies Pvt. Limited',
-            description: 'Designing responsive dashboards and admin panels with focus on usability and performance. Collaborating with backend teams to integrate RESTful APIs for seamless user experiences.',
-            order_index: 0
+            organization: 'Inara Technologies Pvt. Limited',
+            location: 'Remote',
+            employment_type: 'FULL_TIME' as const,
+            summary: 'Designing responsive dashboards and admin panels with focus on usability and performance.',
+            order_index: 0,
+            roles: [
+                {
+                    job_title: 'Frontend Developer',
+                    start_date: new Date('2025-10-01'),
+                    end_date: null,
+                    description: 'Designing responsive dashboards and admin panels with focus on usability and performance. Collaborating with backend teams to integrate RESTful APIs for seamless user experiences.',
+                    order_index: 0,
+                },
+            ],
         },
         {
-            period: 'Aug 2025 - Oct 2025',
-            title: 'AI/ML Intern - Omnisolve AI (Remote)',
-            description: 'Contributed to Virtual Try-On E-commerce System using CP-VTON for realistic clothing simulation. Built personalized AI shopbot for intelligent, context-aware product recommendations.',
-            order_index: 1
+            organization: 'Omnisolve AI',
+            location: 'Remote',
+            employment_type: 'INTERNSHIP' as const,
+            summary: 'AI/ML internship focused on generative and recommendation systems.',
+            order_index: 1,
+            roles: [
+                {
+                    job_title: 'AI/ML Intern',
+                    start_date: new Date('2025-08-01'),
+                    end_date: new Date('2025-10-01'),
+                    description: 'Contributed to Virtual Try-On E-commerce System using CP-VTON for realistic clothing simulation. Built personalized AI shopbot for intelligent, context-aware product recommendations.',
+                    order_index: 0,
+                },
+            ],
         },
         {
-            period: 'Sept 2024 - June 2025',
-            title: 'Research Project - IoT Intrusion Detection using GANs',
-            description: 'Designed Dynamic Class-Weighted GAN (DCSW-GAN) to address class imbalance in IoT intrusion detection. Achieved improved minority-class recall on UNSW-NB15 and CICIDS-2017 datasets.',
-            order_index: 2
-        }
+            organization: 'COMSATS University Islamabad',
+            location: 'Abbottabad, Pakistan',
+            employment_type: 'OTHER' as const,
+            summary: 'Undergraduate research project on IoT intrusion detection using generative adversarial networks.',
+            order_index: 2,
+            roles: [
+                {
+                    job_title: 'Research Project - IoT Intrusion Detection using GANs',
+                    start_date: new Date('2024-09-01'),
+                    end_date: new Date('2025-06-01'),
+                    description: 'Designed Dynamic Class-Weighted GAN (DCSW-GAN) to address class imbalance in IoT intrusion detection. Achieved improved minority-class recall on UNSW-NB15 and CICIDS-2017 datasets.',
+                    order_index: 0,
+                },
+            ],
+        },
     ];
 
-    await Promise.all(experience.map(data => prisma.experienceEntry.create({ data })));
+    for (const { roles: expRoles, ...organization } of experience) {
+        await prisma.experience.create({
+            data: {
+                ...organization,
+                roles: { create: expRoles },
+            },
+        });
+    }
     console.log('✓ Created Education and Experience entries');
 
     // ====================
@@ -188,26 +227,34 @@ async function main(): Promise<void> {
         data: { name: 'AI & Machine Learning', slug: 'ai-ml', description: 'Deep Learning, GANs, and Computer Vision', order_index: 1 }
     });
 
+    // Matches the technical/ai skill lists rendered on the public portfolio
+    // (portfolio-frontend/src/data/mockData.js SKILLS_CONTENT) so the public
+    // site's Skills section is fully backed by real data, not the fallback.
     const technicalSkills = [
-        { name: 'Python', slug: 'python', category: 'Backend', level: 90 },
-        { name: 'JavaScript', slug: 'javascript', category: 'Fullstack', level: 85 },
-        { name: 'React.js', slug: 'react', category: 'Frontend', level: 80 },
-        { name: 'Node.js', slug: 'nodejs', category: 'Backend', level: 75 },
-        { name: 'MongoDB', slug: 'mongodb', category: 'Database', level: 70 },
-        { name: 'PostgreSQL', slug: 'postgresql', category: 'Database', level: 70 }
+        { name: 'Python', slug: 'python', category: 'Backend', level: 95 },
+        { name: 'JavaScript', slug: 'javascript', category: 'Fullstack', level: 90 },
+        { name: 'React.js', slug: 'react', category: 'Frontend', level: 92 },
+        { name: 'Node.js & Express', slug: 'nodejs-express', category: 'Backend', level: 88 },
+        { name: 'MongoDB', slug: 'mongodb', category: 'Database', level: 85 },
+        { name: 'SQL & PostgreSQL', slug: 'sql-postgresql', category: 'Database', level: 82 },
+        { name: 'Java & C++', slug: 'java-cpp', category: 'Backend', level: 78 },
+        { name: 'Git & GitHub', slug: 'git-github', category: 'Tools', level: 90 },
     ];
 
     const aiSkills = [
-        { name: 'PyTorch', slug: 'pytorch', category: 'AI/ML', level: 85 },
-        { name: 'TensorFlow', slug: 'tensorflow', category: 'AI/ML', level: 75 },
-        { name: 'GANs', slug: 'gans', category: 'Research', level: 80 },
-        { name: 'Computer Vision', slug: 'cv', category: 'AI/ML', level: 70 }
+        { name: 'PyTorch & Deep Learning', slug: 'pytorch-deep-learning', category: 'AI/ML', level: 93 },
+        { name: 'TensorFlow & Keras', slug: 'tensorflow-keras', category: 'AI/ML', level: 88 },
+        { name: 'GANs & Computer Vision', slug: 'gans-computer-vision', category: 'AI/ML', level: 90 },
+        { name: 'NLP & Transformers', slug: 'nlp-transformers', category: 'AI/ML', level: 85 },
+        { name: 'OpenCV & Image Processing', slug: 'opencv-image-processing', category: 'AI/ML', level: 87 },
+        { name: 'Flask & FastAPI', slug: 'flask-fastapi', category: 'AI/ML', level: 86 },
+        { name: 'IoT Security & IDS', slug: 'iot-security-ids', category: 'AI/ML', level: 88 },
     ];
 
     const createdSkills: any = {};
 
-    for (const skillData of [...technicalSkills, ...aiSkills]) {
-        const skill = await prisma.skill.create({ data: skillData });
+    for (const [index, skillData] of [...technicalSkills, ...aiSkills].entries()) {
+        const skill = await prisma.skill.create({ data: { ...skillData, order_index: index } });
         createdSkills[skill.name] = skill;
     }
     console.log('✓ Created Skill Categories and Skills');
@@ -215,40 +262,74 @@ async function main(): Promise<void> {
     // ====================
     // 8. Projects
     // ====================
+    // Matches PROJECTS_DATA in portfolio-frontend/src/data/mockData.js (all 5
+    // projects the public site renders). Casual tech tags from the mock data
+    // ('MERN Stack', 'ML', etc.) are mapped onto the closest real Skill
+    // records above, since the backend models tech stack as a relation to
+    // actual Skill rows rather than free-text tags.
     const projectData = [
         {
             title: 'Laboratory Management System',
-            description: 'Full-stack web application with role-based authentication. Features include CRUD for inventory and secure JWT authentication.',
+            short_description: 'Full-stack lab inventory system with role-based authentication.',
+            description: 'Full-stack web application with role-based authentication for Admin, Staff, and Patients. Features include CRUD operations for inventory, lab users, and secure JWT authentication with scalable architecture.',
             repo_url: 'https://github.com/abdulazizatGitHub/Laboratory-Management-System',
             demo_url: 'https://laboratory-management-system.vercel.app/',
+            status: 'LIVE' as const,
             featured: true,
             is_published: true,
             category_id: devCategory.id,
-            skills: ['React.js', 'Node.js', 'MongoDB']
+            skills: ['React.js', 'Node.js & Express', 'MongoDB']
+        },
+        {
+            title: 'E-Commerce Platform',
+            short_description: 'Full-stack e-commerce app with cart, checkout, and admin panel.',
+            description: 'Full-stack e-commerce application with product browsing, cart management, checkout flow, and comprehensive admin panel. Implemented RESTful APIs and structured database design for scalability.',
+            repo_url: 'https://github.com/abdulazizatGitHub/E-Commerce-Application',
+            status: 'LIVE' as const,
+            featured: false,
+            is_published: true,
+            category_id: devCategory.id,
+            skills: ['React.js', 'Node.js & Express', 'MongoDB']
         },
         {
             title: 'IoT Intrusion Detection System',
-            description: 'Designed DCSW-GAN to address class imbalance in IoT intrusion detection. Achieved improved minority-class recall on industry datasets.',
-            repo_url: '#',
+            short_description: 'GAN-based intrusion detection for imbalanced IoT network traffic.',
+            description: 'Designed Dynamic Class-Weighted GAN (DCSW-GAN) to address class imbalance in IoT intrusion detection. Implemented log-based adaptive loss weighting strategy achieving improved minority-class recall on UNSW-NB15 and CICIDS-2017 datasets.',
+            status: 'ARCHIVED' as const,
             featured: true,
             is_published: true,
             category_id: aiCategory.id,
-            skills: ['Python', 'PyTorch', 'GANs']
+            skills: ['Python', 'PyTorch & Deep Learning', 'GANs & Computer Vision', 'IoT Security & IDS']
         },
         {
             title: 'Virtual Try-On System',
-            description: 'Deep learning-based virtual outfit try-on system using CP-VTON for realistic clothing simulation and accurate fitting.',
+            short_description: 'Deep learning virtual outfit try-on with realistic clothing simulation.',
+            description: 'Deep learning-based virtual outfit try-on system using CP-VTON for realistic clothing simulation. Implemented image segmentation and computer vision techniques for accurate fitting visualization.',
             repo_url: 'https://github.com/abdulazizatGitHub/virtual-try-on',
+            status: 'DEVELOPMENT' as const,
             featured: false,
             is_published: true,
             category_id: aiCategory.id,
-            skills: ['PyTorch', 'Computer Vision', 'Python']
+            skills: ['PyTorch & Deep Learning', 'GANs & Computer Vision', 'Python']
+        },
+        {
+            title: 'PantryMind',
+            short_description: 'AI-powered pantry and recipe management with NLP ingredient parsing.',
+            description: 'AI-powered pantry and recipe management platform using NLP for ingredient parsing and ML-based recommendation system for personalized recipe generation and meal planning.',
+            repo_url: 'https://github.com/abdulazizatGitHub/PantryMind',
+            status: 'DEVELOPMENT' as const,
+            featured: false,
+            is_published: true,
+            category_id: aiCategory.id,
+            skills: ['Python', 'Flask & FastAPI', 'NLP & Transformers']
         }
     ];
 
-    for (const data of projectData) {
+    for (const [index, data] of projectData.entries()) {
         const { skills: projectSkills, ...rest } = data;
-        const project = await prisma.project.create({ data: rest });
+        const project = await prisma.project.create({
+            data: { ...rest, order_index: index, thumbnail_url: `https://picsum.photos/seed/${rest.title}/800/600` },
+        });
 
         // Add skill relationships
         for (const skillName of projectSkills) {
@@ -279,7 +360,7 @@ async function main(): Promise<void> {
         const activities = [
             { userId: adminUser.id, action: 'UPDATE', entityType: 'identity', entityName: 'Personal Identity', description: 'Updated professional identity (name, description, or imagery)' },
             { userId: adminUser.id, action: 'CREATE', entityType: 'project', entityName: 'Virtual Try-On System', description: 'Created project "Virtual Try-On System"' },
-            { userId: adminUser.id, action: 'UPDATE', entityType: 'skill', entityName: 'PyTorch', description: 'Updated skill level for PyTorch' },
+            { userId: adminUser.id, action: 'UPDATE', entityType: 'skill', entityName: 'PyTorch & Deep Learning', description: 'Updated skill level for PyTorch & Deep Learning' },
             { userId: adminUser.id, action: 'PUBLISH', entityType: 'project', entityName: 'IoT Intrusion Detection System', description: 'Published project "IoT Intrusion Detection System"' },
         ];
 

@@ -2,7 +2,7 @@ import * as projectRepository from '@data/repositories/project.repository';
 import * as categoryRepository from '@data/repositories/category.repository';
 import * as skillRepository from '@data/repositories/skill.repository';
 import { NotFoundError, BadRequestError } from '../exceptions/app-errors';
-import { Project } from '@data/prisma.client';
+import { Project, ProjectStatus } from '@data/prisma.client';
 import { ProjectWithRelations } from '@data/repositories/project.repository';
 
 /**
@@ -71,8 +71,12 @@ const validateRelationships = async (category_id?: string, skill_ids?: string[])
  */
 export const createProject = async (data: {
     title: string;
+    short_description: string;
     description: string;
-    long_description?: string;
+    thumbnail_url?: string | null;
+    status?: ProjectStatus;
+    start_date?: Date | null;
+    end_date?: Date | null;
     demo_url?: string;
     repo_url?: string;
     is_published?: boolean;
@@ -105,8 +109,12 @@ export const updateProject = async (
     id: string,
     data: {
         title?: string;
+        short_description?: string;
         description?: string;
-        long_description?: string;
+        thumbnail_url?: string | null;
+        status?: ProjectStatus;
+        start_date?: Date | null;
+        end_date?: Date | null;
         demo_url?: string;
         repo_url?: string;
         is_published?: boolean;

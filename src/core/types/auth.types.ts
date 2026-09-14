@@ -19,10 +19,20 @@ export interface TokenPair {
 }
 
 /**
+ * Restricted User structure for public responses
+ */
+export interface UserResponse {
+    id: string;
+    email: string;
+    name: string;
+    role: Role;
+}
+
+/**
  * Response for login/register
  */
 export interface AuthResponse {
-    user: Omit<User, 'password'>;
+    user: UserResponse;
     tokens: TokenPair;
 }
 

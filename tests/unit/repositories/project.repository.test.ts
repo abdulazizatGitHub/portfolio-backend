@@ -49,8 +49,8 @@ describe('Project Repository', () => {
         it('should create a new project', async () => {
             const projectData = {
                 title: 'Test Project',
+                short_description: 'Short A test project',
                 description: 'A test project',
-                long_description: 'Long description of the test project',
                 demo_url: 'https://demo.example.com',
                 repo_url: 'https://github.com/example/test',
                 featured: true,
@@ -74,6 +74,7 @@ describe('Project Repository', () => {
         it('should find project by ID with relations', async () => {
             const project = await ProjectRepository.create({
                 title: 'Project with Relations',
+                short_description: 'Short Test description',
                 description: 'Test description',
                 order_index: 1,
                 category: {
@@ -110,6 +111,7 @@ describe('Project Repository', () => {
         it('should return null for soft-deleted project', async () => {
             const project = await ProjectRepository.create({
                 title: 'To Soft Delete',
+                short_description: 'Short Test',
                 description: 'Test',
                 order_index: 1,
                 category: {
@@ -135,6 +137,7 @@ describe('Project Repository', () => {
         it('should return all non-deleted projects ordered by order_index', async () => {
             await ProjectRepository.create({
                 title: 'Project A',
+                short_description: 'Short Test',
                 description: 'Test',
                 order_index: 2,
                 category: {
@@ -144,6 +147,7 @@ describe('Project Repository', () => {
 
             await ProjectRepository.create({
                 title: 'Project B',
+                short_description: 'Short Test',
                 description: 'Test',
                 order_index: 1,
                 category: {
@@ -161,6 +165,7 @@ describe('Project Repository', () => {
         it('should filter by is_published', async () => {
             await ProjectRepository.create({
                 title: 'Published Project',
+                short_description: 'Short Test',
                 description: 'Test',
                 is_published: true,
                 order_index: 1,
@@ -171,6 +176,7 @@ describe('Project Repository', () => {
 
             await ProjectRepository.create({
                 title: 'Draft Project',
+                short_description: 'Short Test',
                 description: 'Test',
                 is_published: false,
                 order_index: 2,
@@ -188,6 +194,7 @@ describe('Project Repository', () => {
         it('should filter by featured', async () => {
             await ProjectRepository.create({
                 title: 'Featured Project',
+                short_description: 'Short Test',
                 description: 'Test',
                 featured: true,
                 order_index: 1,
@@ -198,6 +205,7 @@ describe('Project Repository', () => {
 
             await ProjectRepository.create({
                 title: 'Normal Project',
+                short_description: 'Short Test',
                 description: 'Test',
                 featured: false,
                 order_index: 2,
@@ -217,6 +225,7 @@ describe('Project Repository', () => {
         it('should update project fields', async () => {
             const project = await ProjectRepository.create({
                 title: 'Original Title',
+                short_description: 'Short Original description',
                 description: 'Original description',
                 order_index: 1,
                 category: {
@@ -240,6 +249,7 @@ describe('Project Repository', () => {
         it('should soft delete and restore project', async () => {
             const project = await ProjectRepository.create({
                 title: 'To Delete',
+                short_description: 'Short Test',
                 description: 'Test',
                 order_index: 1,
                 category: {

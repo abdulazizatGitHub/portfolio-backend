@@ -1,21 +1,32 @@
 import { z } from 'zod';
 
 /**
- * About Content Schemas
+ * About Section Schemas
  */
-export const aboutContentSchema = z.object({
+export const aboutSectionSchema = z.object({
     body: z.object({
         role_title: z.string().trim().min(1, 'Role title is required').max(100),
         heading_prefix: z.string().trim().max(50).optional(),
         heading_highlight: z.string().trim().max(50).optional(),
         portrait_image_url: z.string().trim().max(255).optional().nullable(),
+        order_index: z.number().int().min(0).default(0),
     }),
 });
 
+export const updateAboutSectionSchema = z.object({
+    params: z.object({
+        id: z.string().uuid('Invalid section ID format'),
+    }),
+    body: aboutSectionSchema.shape.body.partial(),
+});
+
 /**
- * About Paragraph Schemas
+ * About Paragraph Schemas (scoped to a section)
  */
 export const paragraphSchema = z.object({
+    params: z.object({
+        sectionId: z.string().uuid('Invalid section ID format'),
+    }),
     body: z.object({
         content: z.string().trim().min(10, 'Paragraph must be at least 10 characters'),
         order_index: z.number().int().min(0).default(0),
@@ -30,13 +41,16 @@ export const updateParagraphSchema = z.object({
 });
 
 /**
- * Stat Schemas
+ * Stat Schemas (scoped to a section)
  */
 export const statSchema = z.object({
+    params: z.object({
+        sectionId: z.string().uuid('Invalid section ID format'),
+    }),
     body: z.object({
         label: z.string().trim().min(1, 'Label is required').max(50),
         value: z.string().trim().min(1, 'Value is required').max(50),
-        context: z.string().trim().optional().default('about'),
+        order_index: z.number().int().min(0).default(0),
     }),
 });
 

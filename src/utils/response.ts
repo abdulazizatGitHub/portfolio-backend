@@ -4,8 +4,10 @@ import { Response } from 'express';
  * Standard Response Envelope
  */
 export interface StandardResponse<T> {
-    success: true;
+    status: 'success' | 'error';
     message: string;
+    ErrorCode: number;
+    ErrorMessage: string | null;
     data: T;
 }
 
@@ -13,8 +15,10 @@ export interface StandardResponse<T> {
  * List Response Envelope (with Pagination)
  */
 export interface ListResponse<T> {
-    success: true;
+    status: 'success' | 'error';
     message: string;
+    ErrorCode: number;
+    ErrorMessage: string | null;
     data: T[];
     meta: {
         page: number;
@@ -34,8 +38,10 @@ export const sendSuccess = <T>(
     statusCode = 200
 ) => {
     return res.status(statusCode).json({
-        success: true,
+        status: 'success',
         message,
+        ErrorCode: 0,
+        ErrorMessage: null,
         data,
     });
 };
@@ -53,8 +59,10 @@ export const sendList = <T>(
     const totalPages = Math.ceil(meta.total / meta.limit);
 
     return res.status(statusCode).json({
-        success: true,
+        status: 'success',
         message,
+        ErrorCode: 0,
+        ErrorMessage: null,
         data,
         meta: {
             ...meta,

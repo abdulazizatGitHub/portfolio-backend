@@ -6,12 +6,12 @@ import { prisma, Stat, Prisma } from '../prisma.client';
  */
 
 /**
- * Find all stats, optionally filtered by context
+ * Find all stats, optionally scoped to a section
  */
-export const findAll = async (context?: string): Promise<Stat[]> => {
+export const findAll = async (aboutContentId?: string): Promise<Stat[]> => {
     return await prisma.stat.findMany({
-        where: context ? { context } : undefined,
-        orderBy: { created_at: 'asc' },
+        where: aboutContentId ? { about_content_id: aboutContentId } : undefined,
+        orderBy: { order_index: 'asc' },
     });
 };
 

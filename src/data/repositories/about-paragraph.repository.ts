@@ -6,10 +6,11 @@ import { prisma, AboutParagraph, Prisma } from '../prisma.client';
  */
 
 /**
- * Find all about paragraphs ordered by index
+ * Find all about paragraphs, optionally scoped to a section, ordered by index
  */
-export const findAll = async (): Promise<AboutParagraph[]> => {
+export const findAll = async (aboutContentId?: string): Promise<AboutParagraph[]> => {
     return await prisma.aboutParagraph.findMany({
+        where: aboutContentId ? { about_content_id: aboutContentId } : undefined,
         orderBy: { order_index: 'asc' },
     });
 };

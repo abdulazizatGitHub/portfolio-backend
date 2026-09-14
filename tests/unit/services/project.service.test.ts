@@ -66,8 +66,8 @@ describe('Project Service', () => {
         it('should create project after validating dependencies', async () => {
             const createData = {
                 title: 'New',
+                short_description: 'A short description',
                 description: 'A sufficiently long description for validation',
-                long_description: 'cont',
                 category_id: 'cat-123',
                 skill_ids: ['skill-1']
             };
@@ -89,6 +89,18 @@ describe('Project Service', () => {
                 title: 'Fail',
                 description: 'desc',
                 category_id: 'invalid'
+            } as any)).rejects.toThrow(BadRequestError);
+        });
+
+        it('should throw BadRequestError if a skill id does not exist', async () => {
+            (categoryRepository.findById as jest.Mock).mockResolvedValue({ id: 'cat-123' });
+            (skillRepository.findById as jest.Mock).mockResolvedValue(null);
+
+            await expect(projectService.createProject({
+                title: 'Fail',
+                description: 'desc',
+                category_id: 'cat-123',
+                skill_ids: ['missing-skill'],
             } as any)).rejects.toThrow(BadRequestError);
         });
     });

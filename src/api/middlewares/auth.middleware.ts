@@ -13,16 +13,18 @@ export const authenticate = async (
     _res: Response,
     next: NextFunction
 ) => {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return next(new UnauthorizedError('No token provided', 'MISSING_TOKEN'));
-    }
-
-    const token = authHeader.split(' ')[1];
+    // Check for token in cookies first, then in Authorization header
+    let token = req.cookies?.accessToken;
 
     if (!token) {
-        return next(new UnauthorizedError('Invalid token format', 'INVALID_TOKEN_FORMAT'));
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.split(' ')[1];
+        }
+    }
+
+    if (!token) {
+        return next(new UnauthorizedError('No token provided', 'MISSING_TOKEN'));
     }
 
     try {

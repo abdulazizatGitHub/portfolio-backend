@@ -1,6 +1,14 @@
 module.exports = {
     preset: 'ts-jest',
     testEnvironment: 'node',
+    // Integration tests share one real Postgres instance and clean up by
+    // deleting rows with shared "test-" prefixes, so they must not run
+    // concurrently across test files or they race and clobber each other.
+    maxWorkers: 1,
+    // Point at a disposable test database (portfolio_test_db), never the
+    // dev database dev servers are actually serving from — several tests
+    // do unscoped deleteMany() calls that would otherwise wipe live data.
+    setupFiles: ['<rootDir>/tests/setupEnv.js'],
     globals: {
         'ts-jest': {
             tsconfig: 'tsconfig.json',
@@ -24,10 +32,10 @@ module.exports = {
     ],
     coverageThreshold: {
         global: {
-            branches: 70,
-            functions: 70,
-            lines: 70,
-            statements: 70,
+            branches: 84,
+            functions: 90,
+            lines: 92,
+            statements: 93,
         },
     },
     coverageDirectory: 'coverage',

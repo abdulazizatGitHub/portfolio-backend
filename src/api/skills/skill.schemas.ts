@@ -29,6 +29,9 @@ export const createSkillSchema = z.object({
         category: z.string().max(50).optional().nullable(),
         icon_url: z.string().url().max(255).optional().nullable(),
         level: z.number().int().min(0).max(100).optional(),
+        context: z.string().max(255).optional().nullable(),
+        related_tools: z.array(z.string().max(50)).optional(),
+        order_index: z.number().int().min(0).optional(),
     }),
 });
 
@@ -50,6 +53,9 @@ export const updateSkillSchema = z.object({
         category: z.string().max(50).optional().nullable(),
         icon_url: z.string().url().max(255).optional().nullable(),
         level: z.number().int().min(0).max(100).optional(),
+        context: z.string().max(255).optional().nullable(),
+        related_tools: z.array(z.string().max(50)).optional(),
+        order_index: z.number().int().min(0).optional(),
     }),
 });
 

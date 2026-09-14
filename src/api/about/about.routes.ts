@@ -2,7 +2,8 @@ import { Router } from 'express';
 import * as aboutController from './about.controller';
 import { validate } from '../middlewares/validate.middleware';
 import {
-    aboutContentSchema,
+    aboutSectionSchema,
+    updateAboutSectionSchema,
     paragraphSchema,
     updateParagraphSchema,
     statSchema,
@@ -23,41 +24,48 @@ const router = Router();
 // ====================
 
 /**
- * Get full About section data
+ * Get all About sections
  */
 router.get('/', aboutController.getAbout);
 
 // ====================
-// Admin Routes
+// Admin Routes (Sections)
 // ====================
 
-/**
- * Update about metadata (role title)
- */
-router.put(
-    '/',
+router.post(
+    '/sections',
     authenticate,
     authorize(Role.ADMIN),
-    validate(aboutContentSchema),
-    aboutController.updateAbout
+    validate(aboutSectionSchema),
+    aboutController.createSection
+);
+
+router.patch(
+    '/sections/:id',
+    authenticate,
+    authorize(Role.ADMIN),
+    validate(updateAboutSectionSchema),
+    aboutController.updateSection
+);
+
+router.delete(
+    '/sections/:id',
+    authenticate,
+    authorize(Role.ADMIN),
+    validate(deleteResourceSchema),
+    aboutController.deleteSection
 );
 
 // --- Paragraphs ---
 
-/**
- * Create a new biography paragraph
- */
 router.post(
-    '/paragraphs',
+    '/sections/:sectionId/paragraphs',
     authenticate,
     authorize(Role.ADMIN),
     validate(paragraphSchema),
     aboutController.createParagraph
 );
 
-/**
- * Update a biography paragraph
- */
 router.patch(
     '/paragraphs/:id',
     authenticate,
@@ -66,9 +74,6 @@ router.patch(
     aboutController.updateParagraph
 );
 
-/**
- * Delete a biography paragraph
- */
 router.delete(
     '/paragraphs/:id',
     authenticate,
@@ -79,20 +84,14 @@ router.delete(
 
 // --- Stats ---
 
-/**
- * Create a new professional stat
- */
 router.post(
-    '/stats',
+    '/sections/:sectionId/stats',
     authenticate,
     authorize(Role.ADMIN),
     validate(statSchema),
     aboutController.createStat
 );
 
-/**
- * Update a professional stat
- */
 router.patch(
     '/stats/:id',
     authenticate,
@@ -101,9 +100,6 @@ router.patch(
     aboutController.updateStat
 );
 
-/**
- * Delete a professional stat
- */
 router.delete(
     '/stats/:id',
     authenticate,

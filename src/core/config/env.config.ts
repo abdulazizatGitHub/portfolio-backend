@@ -27,6 +27,10 @@ const envSchema = z.object({
         .transform(Number)
         .pipe(z.number().positive())
         .default('100'),
+    REGISTER_ENABLED: z
+        .string()
+        .transform((val) => val === 'true')
+        .default('false'),
 });
 
 /**
@@ -48,9 +52,13 @@ function validateEnv(): z.infer<typeof envSchema> {
  * Application configuration object
  * Validates environment variables on initialization
  */
+const env = validateEnv();
+
 export const config = {
-    env: validateEnv(),
-    isDevelopment: validateEnv().NODE_ENV === 'development',
-    isProduction: validateEnv().NODE_ENV === 'production',
-    isTest: validateEnv().NODE_ENV === 'test',
+    env,
+    isDevelopment: env.NODE_ENV === 'development',
+    isProduction: env.NODE_ENV === 'production',
+    isTest: env.NODE_ENV === 'test',
+    isRegisterEnabled: env.NODE_ENV !== 'production' || env.REGISTER_ENABLED,
+    corsOrigins: env.CORS_ORIGIN.split(',').map((origin) => origin.trim()),
 } as const;

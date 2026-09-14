@@ -17,11 +17,27 @@ enum Role {
   VIEWER
 }
 
+enum ProjectStatus {
+  LIVE
+  DRAFT
+  DEVELOPMENT
+  ARCHIVED
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  FREELANCE
+  OTHER
+}
+
 // User model for authentication and authorization
 model User {
   id         String   @id @default(uuid())
   email      String   @unique
-  password   String   // Hashed with bcrypt
+  password   String // Hashed with bcrypt
   name       String
   role       Role     @default(VIEWER)
   created_at DateTime @default(now())
@@ -52,37 +68,45 @@ model Category {
 
 // Skill model for technologies and tools
 model Skill {
-  id         String   @id @default(uuid())
-  name       String   @unique
-  slug       String   @unique
-  icon_url   String?
-  category   String?  // e.g., "Frontend", "Backend", "DevOps"
-  level      Int      @default(0) // 0-100 percentage
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id            String   @id @default(uuid())
+  name          String   @unique
+  slug          String   @unique
+  icon_url      String?
+  category      String? // e.g., "Frontend", "Backend", "DevOps"
+  level         Int      @default(0) // 0-100 percentage
+  context       String? // usage context shown in admin
+  related_tools String[] @default([])
+  order_index   Int      @default(0)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
 
   // Relations
   project_skills ProjectSkill[]
 
   @@index([slug])
+  @@index([order_index])
   @@map("skills")
 }
 
 // Project model for portfolio projects
 model Project {
-  id               String    @id @default(uuid())
-  title            String
-  description      String
-  long_description String?   @db.Text
-  demo_url         String?
-  repo_url         String?
-  featured         Boolean   @default(false)
-  is_published     Boolean   @default(false)
-  order_index      Int       @default(0)
-  category_id      String
-  deleted_at       DateTime?
-  created_at       DateTime  @default(now())
-  updated_at       DateTime  @updatedAt
+  id                String        @id @default(uuid())
+  title             String
+  short_description String
+  description       String        @db.Text
+  thumbnail_url     String?
+  status            ProjectStatus @default(DRAFT)
+  start_date        DateTime?
+  end_date          DateTime?
+  demo_url          String?
+  repo_url          String?
+  featured          Boolean       @default(false)
+  is_published      Boolean       @default(false)
+  order_index       Int           @default(0)
+  category_id       String
+  deleted_at        DateTime?
+  created_at        DateTime      @default(now())
+  updated_at        DateTime      @updatedAt
 
   // Relations
   category       Category       @relation(fields: [category_id], references: [id], onDelete: Cascade)
@@ -93,6 +117,7 @@ model Project {
   @@index([featured])
   @@index([order_index])
   @@index([category_id])
+  @@index([status])
   @@map("projects")
 }
 
@@ -136,11 +161,14 @@ model PersonalContent {
   name              String
   title_prefix      String
   description       String   @db.Text
-  profile_image_url String?  // Path to profile/hero image
+  profile_image_url String? // Path to profile/hero image
   cv_file_path      String
   cv_download_name  String
+  is_default        Boolean  @default(true)
+  created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
+  @@index([is_default])
   @@map("personal_content")
 }
 
@@ -163,32 +191,48 @@ model AboutContent {
   role_title         String
   heading_prefix     String   @default("About")
   heading_highlight  String   @default("Me")
-  portrait_image_url String?  // Path to about portrait image
+  portrait_image_url String? // Path to about portrait image
+  order_index        Int      @default(0)
+  created_at         DateTime @default(now())
   updated_at         DateTime @updatedAt
 
+  // Relations
+  paragraphs AboutParagraph[]
+  stats      Stat[]
+
+  @@index([order_index])
   @@map("about_content")
 }
 
 model AboutParagraph {
-  id          String   @id @default(uuid())
-  content     String   @db.Text
-  order_index Int      @default(0)
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  id               String   @id @default(uuid())
+  about_content_id String
+  content          String   @db.Text
+  order_index      Int      @default(0)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
 
+  // Relations
+  about_content AboutContent @relation(fields: [about_content_id], references: [id], onDelete: Cascade)
+
+  @@index([about_content_id])
   @@index([order_index])
   @@map("about_paragraphs")
 }
 
 model Stat {
-  id         String   @id @default(uuid())
-  label      String
-  value      String
-  context    String   @default("about")
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id               String   @id @default(uuid())
+  about_content_id String
+  label            String
+  value            String
+  order_index      Int      @default(0)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
 
-  @@index([context])
+  // Relations
+  about_content AboutContent @relation(fields: [about_content_id], references: [id], onDelete: Cascade)
+
+  @@index([about_content_id])
   @@map("stats")
 }
 
@@ -208,17 +252,40 @@ model EducationEntry {
   @@map("education_entries")
 }
 
-model ExperienceEntry {
-  id          String   @id @default(uuid())
-  period      String
-  title       String
-  description String   @db.Text
-  order_index Int      @default(0)
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+model Experience {
+  id              String          @id @default(uuid())
+  organization    String
+  location        String?
+  employment_type EmploymentType?
+  summary         String?         @db.Text
+  order_index     Int             @default(0)
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
+
+  // Relations
+  roles ExperienceRole[]
 
   @@index([order_index])
-  @@map("experience_entries")
+  @@map("experiences")
+}
+
+model ExperienceRole {
+  id            String    @id @default(uuid())
+  experience_id String
+  job_title     String
+  start_date    DateTime
+  end_date      DateTime?
+  description   String    @db.Text
+  order_index   Int       @default(0)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  // Relations
+  experience Experience @relation(fields: [experience_id], references: [id], onDelete: Cascade)
+
+  @@index([experience_id])
+  @@index([order_index])
+  @@map("experience_roles")
 }
 
 // ====================
@@ -238,7 +305,7 @@ model ContactContent {
 
 model ContactInfoItem {
   id          String   @id @default(uuid())
-  type        String   // 'email' | 'phone' | 'location'
+  type        String // 'email' | 'phone' | 'location'
   label       String
   value       String
   href        String?
@@ -261,16 +328,17 @@ model SocialLink {
   @@index([order_index])
   @@map("social_links")
 }
+
 // ====================
 // Analytics & Tracking
 // ====================
 model PageVisit {
   id         String   @id @default(uuid())
-  path       String   // e.g., "/", "/projects/slug"
-  ip_hash    String?  // For unique visitor tracking (anonymized)
+  path       String // e.g., "/", "/projects/slug"
+  ip_hash    String? // For unique visitor tracking (anonymized)
   user_agent String?
   referer    String?
-  device     String?  // 'mobile' | 'desktop' | 'tablet'
+  device     String? // 'mobile' | 'desktop' | 'tablet'
   browser    String?
   os         String?
   created_at DateTime @default(now())
@@ -282,10 +350,10 @@ model PageVisit {
 
 model EventLog {
   id         String   @id @default(uuid())
-  event_type String   // e.g., "cv_download", "social_click"
-  category   String?  // e.g., "engagement", "navigation"
-  label      String?  // e.g., "LinkedIn", "Resume.pdf"
-  metadata   Json?    // Flexible extra data
+  event_type String // e.g., "cv_download", "social_click"
+  category   String? // e.g., "engagement", "navigation"
+  label      String? // e.g., "LinkedIn", "Resume.pdf"
+  metadata   Json? // Flexible extra data
   created_at DateTime @default(now())
 
   @@index([event_type])
@@ -296,12 +364,12 @@ model EventLog {
 // [NEW] ActivityLog for administrative actions
 model ActivityLog {
   id          String   @id @default(uuid())
-  user_id     String   // The admin who performed the action
-  action      String   // e.g., "CREATE", "UPDATE", "DELETE", "PUBLISH"
-  entity_type String   // e.g., "project", "skill", "experience"
+  user_id     String // The admin who performed the action
+  action      String // e.g., "CREATE", "UPDATE", "DELETE", "PUBLISH"
+  entity_type String // e.g., "project", "skill", "experience"
   entity_id   String?
-  entity_name String?  // e.g., "Laboratory Management System"
-  description String   // Human readable description
+  entity_name String? // e.g., "Laboratory Management System"
+  description String // Human readable description
   created_at  DateTime @default(now())
 
   @@index([user_id])

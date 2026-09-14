@@ -50,7 +50,7 @@ describe('Skill Integration Tests', () => {
                 });
 
             expect(response.status).toBe(201);
-            expect(response.body.success).toBe(true);
+            expect(response.body.status).toBe('success');
             expect(response.body.data.name).toBe('Test Skill One');
             skillId = response.body.data.id;
             skillSlug = response.body.data.slug;
@@ -83,7 +83,7 @@ describe('Skill Integration Tests', () => {
         it('should return skills with pagination and meta', async () => {
             const response = await request(app).get('/api/v1/skills?page=1&limit=2');
             expect(response.status).toBe(200);
-            expect(response.body.success).toBe(true);
+            expect(response.body.status).toBe('success');
             expect(Array.isArray(response.body.data)).toBe(true);
             expect(response.body.meta).toBeDefined();
             expect(response.body.meta.page).toBe(1);

@@ -67,15 +67,15 @@ describe('Project Integration Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({
                     title: 'test-Project',
+                    short_description: 'A short project description',
                     description: 'A very cool test project description',
-                    long_description: 'Long content about the test project',
                     category_id: categoryId,
                     skill_ids: [skillId],
                     is_published: true
                 });
 
             expect(response.status).toBe(201);
-            expect(response.body.success).toBe(true);
+            expect(response.body.status).toBe('success');
             expect(response.body.data.title).toBe('test-Project');
             projectId = response.body.data.id;
         });
@@ -86,6 +86,7 @@ describe('Project Integration Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({
                     title: 'test-Fail Category',
+                    short_description: 'A short project description',
                     description: 'A very cool test project description',
                     category_id: '00000000-0000-0000-0000-000000000000'
                 });
@@ -102,7 +103,7 @@ describe('Project Integration Tests', () => {
                 .query({ page: 1, limit: 10, category_id: categoryId });
 
             expect(response.status).toBe(200);
-            expect(response.body.success).toBe(true);
+            expect(response.body.status).toBe('success');
             expect(Array.isArray(response.body.data)).toBe(true);
             expect(response.body.meta.total).toBeGreaterThan(0);
         });
@@ -111,6 +112,60 @@ describe('Project Integration Tests', () => {
             const response = await request(app).get('/api/v1/projects?search=Project');
             expect(response.status).toBe(200);
             expect(response.body.data.some((p: any) => p.title.includes('Project'))).toBe(true);
+        });
+
+        it('should actually filter by is_published=true and exclude unpublished projects', async () => {
+            const unpublished = await request(app)
+                .post('/api/v1/projects')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({
+                    title: 'test-Unpublished Filter Project',
+                    short_description: 'Should not appear when is_published=true',
+                    description: 'Should not appear when is_published=true is requested',
+                    category_id: categoryId,
+                    is_published: false,
+                });
+            expect(unpublished.status).toBe(201);
+
+            const response = await request(app).get('/api/v1/projects?is_published=true&limit=100');
+            expect(response.status).toBe(200);
+            expect(
+                response.body.data.every((p: any) => p.is_published === true)
+            ).toBe(true);
+            expect(
+                response.body.data.some((p: any) => p.id === unpublished.body.data.id)
+            ).toBe(false);
+        });
+
+        it('should filter by is_published=false to only return unpublished projects', async () => {
+            const response = await request(app).get('/api/v1/projects?is_published=false&limit=100');
+            expect(response.status).toBe(200);
+            expect(
+                response.body.data.every((p: any) => p.is_published === false)
+            ).toBe(true);
+            expect(response.body.data.length).toBeGreaterThan(0);
+        });
+
+        it('should filter by featured=true', async () => {
+            const featuredProject = await request(app)
+                .post('/api/v1/projects')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({
+                    title: 'test-Featured Filter Project',
+                    short_description: 'Should appear when featured=true',
+                    description: 'Should appear when featured=true is requested',
+                    category_id: categoryId,
+                    featured: true,
+                });
+            expect(featuredProject.status).toBe(201);
+
+            const response = await request(app).get('/api/v1/projects?featured=true&limit=100');
+            expect(response.status).toBe(200);
+            expect(response.body.data.length).toBeGreaterThan(0);
+            expect(response.body.data.every((p: any) => p.featured === true)).toBe(true);
+            expect(
+                response.body.data.some((p: any) => p.id === featuredProject.body.data.id)
+            ).toBe(true);
         });
     });
 

@@ -61,6 +61,9 @@ export const createSkill = async (data: {
     category?: string | null;
     icon_url?: string | null;
     level?: number;
+    context?: string | null;
+    related_tools?: string[];
+    order_index?: number;
 }): Promise<Skill> => {
     // 1. Generate slug if missing
     const slug = data.slug ? slugify(data.slug) : slugify(data.name);
@@ -92,6 +95,9 @@ export const updateSkill = async (
         category?: string | null;
         icon_url?: string | null;
         level?: number;
+        context?: string | null;
+        related_tools?: string[];
+        order_index?: number;
     }
 ): Promise<Skill> => {
     // Check if exists

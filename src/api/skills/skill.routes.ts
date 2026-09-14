@@ -20,18 +20,18 @@ const router = Router();
 router.get('/', validate(skillQuerySchema), skillController.getSkills);
 
 /**
- * @route   GET /api/v1/skills/:id
- * @desc    Get skill by ID
- * @access  Public
- */
-router.get('/:id', skillController.getSkill);
-
-/**
  * @route   GET /api/v1/skills/slug/:slug
  * @desc    Get skill by slug
  * @access  Public
  */
 router.get('/slug/:slug', skillController.getSkillBySlug);
+
+/**
+ * @route   GET /api/v1/skills/:id
+ * @desc    Get skill by ID
+ * @access  Public
+ */
+router.get('/:id', skillController.getSkill);
 
 /**
  * @route   POST /api/v1/skills

@@ -33,7 +33,7 @@ describe('Personal & JobRole Integration', () => {
         it('should return 404 if no content initialized', async () => {
             const res = await request(app).get('/api/v1/personal');
             expect(res.status).toBe(404);
-            expect(res.body.success).toBe(false);
+            expect(res.body.status).toBe('error');
         });
     });
 
@@ -53,7 +53,7 @@ describe('Personal & JobRole Integration', () => {
                 .send(data);
 
             expect(res.status).toBe(200);
-            expect(res.body.success).toBe(true);
+            expect(res.body.status).toBe('success');
             expect(res.body.data.name).toBe(data.name);
 
             // Verify persistence

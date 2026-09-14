@@ -53,6 +53,39 @@ describe('Category Service', () => {
             const category = await categoryService.getCategoryBySlug('web-dev');
             expect(category).toEqual(mockCategory);
         });
+
+        it('should throw NotFoundError if slug does not exist', async () => {
+            (categoryRepository.findBySlug as jest.Mock).mockResolvedValue(null);
+            await expect(categoryService.getCategoryBySlug('invalid')).rejects.toThrow(NotFoundError);
+        });
+    });
+
+    describe('updateCategory', () => {
+        it('should update a category with no slug change', async () => {
+            (categoryRepository.findById as jest.Mock).mockResolvedValue(mockCategory);
+            (categoryRepository.update as jest.Mock).mockResolvedValue({ ...mockCategory, name: 'Updated' });
+
+            const result = await categoryService.updateCategory('cat-123', { name: 'Updated' });
+            expect(result.name).toBe('Updated');
+        });
+
+        it('should throw ConflictError if new slug already used by another category', async () => {
+            (categoryRepository.findById as jest.Mock).mockResolvedValue(mockCategory);
+            (categoryRepository.findBySlug as jest.Mock).mockResolvedValue({ ...mockCategory, id: 'other-id' });
+
+            await expect(
+                categoryService.updateCategory('cat-123', { slug: 'taken-slug' })
+            ).rejects.toThrow(ConflictError);
+        });
+
+        it('should allow updating slug to the same category (no-op conflict)', async () => {
+            (categoryRepository.findById as jest.Mock).mockResolvedValue(mockCategory);
+            (categoryRepository.findBySlug as jest.Mock).mockResolvedValue(mockCategory);
+            (categoryRepository.update as jest.Mock).mockResolvedValue(mockCategory);
+
+            const result = await categoryService.updateCategory('cat-123', { slug: 'web-dev' });
+            expect(result).toEqual(mockCategory);
+        });
     });
 
     describe('createCategory', () => {

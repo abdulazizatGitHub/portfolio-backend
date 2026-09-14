@@ -61,7 +61,7 @@ describe('Category Integration Tests', () => {
                 });
 
             expect(response.status).toBe(201);
-            expect(response.body.success).toBe(true);
+            expect(response.body.status).toBe('success');
             expect(response.body.data.name).toBe('Test Category');
             categoryId = response.body.data.id;
             categorySlug = response.body.data.slug;
@@ -91,7 +91,7 @@ describe('Category Integration Tests', () => {
         it('should return categories with pagination and meta', async () => {
             const response = await request(app).get('/api/v1/categories?page=1&limit=2');
             expect(response.status).toBe(200);
-            expect(response.body.success).toBe(true);
+            expect(response.body.status).toBe('success');
             expect(Array.isArray(response.body.data)).toBe(true);
             expect(response.body.meta).toBeDefined();
             expect(response.body.meta.page).toBe(1);
@@ -144,6 +144,14 @@ describe('Category Integration Tests', () => {
             // Verify it's not found in public list
             const check = await request(app).get(`/api/v1/categories/${categoryId}`);
             expect(check.status).toBe(404);
+        });
+
+        it('should exclude soft-deleted categories from the list by default, and include them with includeDeleted=true', async () => {
+            const defaultList = await request(app).get('/api/v1/categories?limit=100');
+            expect(defaultList.body.data.some((c: any) => c.id === categoryId)).toBe(false);
+
+            const withDeleted = await request(app).get('/api/v1/categories?includeDeleted=true&limit=100');
+            expect(withDeleted.body.data.some((c: any) => c.id === categoryId)).toBe(true);
         });
 
         it('should allow admin to restore category', async () => {

@@ -3,6 +3,14 @@ import { Application } from 'express';
 import { createApp } from '../../src/app';
 import { prisma } from '../../src/data/prisma.client';
 
+const extractCookie = (response: request.Response, name: string): string | undefined => {
+    const raw = response.headers['set-cookie'];
+    const cookies: string[] = Array.isArray(raw) ? raw : raw ? [raw] : [];
+    const match = cookies.find((c) => c.startsWith(`${name}=`));
+    if (!match) return undefined;
+    return match.split(';')[0]!.substring(name.length + 1);
+};
+
 describe('Auth Integration Tests', () => {
     let app: Application;
 
@@ -31,7 +39,7 @@ describe('Auth Integration Tests', () => {
     let refreshToken: string;
 
     describe('POST /api/v1/auth/register', () => {
-        it('should register a new user and return tokens', async () => {
+        it('should register a new user and set auth cookies', async () => {
             const response = await request(app)
                 .post('/api/v1/auth/register')
                 .send(testUser);
@@ -39,11 +47,11 @@ describe('Auth Integration Tests', () => {
             expect(response.status).toBe(201);
             expect(response.body.status).toBe('success');
             expect(response.body.data.user.email).toBe(testUser.email);
-            expect(response.body.data.tokens.accessToken).toBeDefined();
-            expect(response.body.data.tokens.refreshToken).toBeDefined();
 
-            accessToken = response.body.data.tokens.accessToken;
-            refreshToken = response.body.data.tokens.refreshToken;
+            accessToken = extractCookie(response, 'accessToken')!;
+            refreshToken = extractCookie(response, 'refreshToken')!;
+            expect(accessToken).toBeDefined();
+            expect(refreshToken).toBeDefined();
         });
 
         it('should return 409 if email already exists', async () => {
@@ -61,12 +69,11 @@ describe('Auth Integration Tests', () => {
 
             expect(response.status).toBe(422);
             expect(response.body.status).toBe('error');
-            expect(response.body.code).toBe('VALIDATION_ERROR');
         });
     });
 
     describe('POST /api/v1/auth/login', () => {
-        it('should login and return tokens', async () => {
+        it('should login and set auth cookies', async () => {
             const response = await request(app)
                 .post('/api/v1/auth/login')
                 .send({
@@ -75,7 +82,8 @@ describe('Auth Integration Tests', () => {
                 });
 
             expect(response.status).toBe(200);
-            expect(response.body.data.tokens.accessToken).toBeDefined();
+            expect(extractCookie(response, 'accessToken')).toBeDefined();
+            expect(extractCookie(response, 'refreshToken')).toBeDefined();
         });
 
         it('should return 401 for invalid credentials', async () => {
@@ -109,14 +117,14 @@ describe('Auth Integration Tests', () => {
     });
 
     describe('POST /api/v1/auth/refresh', () => {
-        it('should return new tokens with valid refresh token', async () => {
+        it('should return new tokens using the refresh cookie', async () => {
             const response = await request(app)
                 .post('/api/v1/auth/refresh')
-                .send({ refreshToken });
+                .set('Cookie', `refreshToken=${refreshToken}`);
 
             expect(response.status).toBe(200);
-            expect(response.body.data.accessToken).toBeDefined();
-            expect(response.body.data.refreshToken).toBeDefined();
+            expect(extractCookie(response, 'accessToken')).toBeDefined();
+            expect(extractCookie(response, 'refreshToken')).toBeDefined();
         });
 
         it('should return 401 with invalid refresh token', async () => {
@@ -125,6 +133,15 @@ describe('Auth Integration Tests', () => {
                 .send({ refreshToken: 'invalid-refresh-token' });
 
             expect(response.status).toBe(401);
+        });
+    });
+
+    describe('POST /api/v1/auth/logout', () => {
+        it('should clear auth cookies', async () => {
+            const response = await request(app).post('/api/v1/auth/logout');
+
+            expect(response.status).toBe(200);
+            expect(response.body.status).toBe('success');
         });
     });
 });

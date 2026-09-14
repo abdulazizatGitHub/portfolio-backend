@@ -15,18 +15,18 @@ const router = Router();
 router.get('/', validate(categoryQuerySchema), categoryController.getCategories);
 
 /**
- * @route   GET /api/v1/categories/:id
- * @desc    Get category by ID
- * @access  Public
- */
-router.get('/:id', categoryController.getCategory);
-
-/**
  * @route   GET /api/v1/categories/slug/:slug
  * @desc    Get category by slug
  * @access  Public
  */
 router.get('/slug/:slug', categoryController.getCategoryBySlug);
+
+/**
+ * @route   GET /api/v1/categories/:id
+ * @desc    Get category by ID
+ * @access  Public
+ */
+router.get('/:id', categoryController.getCategory);
 
 /**
  * @route   POST /api/v1/categories

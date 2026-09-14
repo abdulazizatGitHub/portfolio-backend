@@ -4,6 +4,7 @@ import * as tokenService from './token.service';
 import {
     AuthResponse,
     TokenPair,
+    UserResponse,
 } from '../types/auth.types';
 import {
     UnauthorizedError,
@@ -41,9 +42,6 @@ export type LoginInput = z.infer<typeof loginSchema>;
  * Business logic for authentication
  */
 
-/**
- * Register a new user
- */
 export const register = async (data: RegisterInput): Promise<AuthResponse> => {
     // Check if user already exists
     const existingUser = await userRepository.findByEmail(data.email);
@@ -65,11 +63,13 @@ export const register = async (data: RegisterInput): Promise<AuthResponse> => {
     // Generate tokens
     const tokens = tokenService.generateTokenPair(user.id, user.email, user.role);
 
-    // Remove password from response
-    const { password, ...userWithoutPassword } = user;
-
     return {
-        user: userWithoutPassword,
+        user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+        },
         tokens,
     };
 };
@@ -96,11 +96,13 @@ export const login = async (data: LoginInput): Promise<AuthResponse> => {
     // Generate tokens
     const tokens = tokenService.generateTokenPair(user.id, user.email, user.role);
 
-    // Remove password from response
-    const { password, ...userWithoutPassword } = user;
-
     return {
-        user: userWithoutPassword,
+        user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+        },
         tokens,
     };
 };
@@ -125,12 +127,16 @@ export const refresh = async (refreshToken: string): Promise<TokenPair> => {
 /**
  * Validate user exists and get data
  */
-export const validateUser = async (userId: string) => {
+export const validateUser = async (userId: string): Promise<UserResponse> => {
     const user = await userRepository.findById(userId);
     if (!user) {
         throw new NotFoundError('User not found', 'USER_NOT_FOUND');
     }
 
-    const { password, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    return {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+    };
 };

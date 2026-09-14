@@ -5,11 +5,11 @@ import { ActivityService, ActivityAction } from '@core/services/activity.service
 
 /**
  * About Controller
- * Handles retrieval and management of About section content
+ * Handles retrieval and management of About sections
  */
 
 /**
- * Get full About section data (aggregated)
+ * Get all About sections (aggregated)
  */
 export const getAbout = async (_req: Request, res: Response, next: NextFunction) => {
     try {
@@ -21,23 +21,58 @@ export const getAbout = async (_req: Request, res: Response, next: NextFunction)
 };
 
 /**
- * Update about metadata (upsert singleton)
+ * Create a new About section
  */
-export const updateAbout = async (req: Request, res: Response, next: NextFunction) => {
+export const createSection = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const updated = await aboutService.updateAboutContent(req.body);
+        const section = await aboutService.createSection(req.body);
 
-        // Log activity
+        await ActivityService.log({
+            userId: (req as any).user.id,
+            action: ActivityAction.CREATE,
+            entityType: 'about',
+            entityId: section.id,
+            entityName: section.role_title,
+            description: 'Created about section',
+        });
+
+        sendSuccess(res, 'About section created', section, 201);
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Update an About section
+ */
+export const updateSection = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const id = req.params.id as string;
+        const updated = await aboutService.updateSection(id, req.body);
+
         await ActivityService.log({
             userId: (req as any).user.id,
             action: ActivityAction.UPDATE,
             entityType: 'about',
             entityId: updated.id,
-            entityName: 'About Metadata',
-            description: 'Updated about section metadata and imagery',
+            entityName: updated.role_title,
+            description: 'Updated about section',
         });
 
-        sendSuccess(res, 'About content updated', updated);
+        sendSuccess(res, 'About section updated', updated);
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Delete an About section
+ */
+export const deleteSection = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const id = req.params.id as string;
+        await aboutService.deleteSection(id);
+        sendSuccess(res, 'About section deleted', null);
     } catch (error) {
         next(error);
     }
@@ -47,21 +82,16 @@ export const updateAbout = async (req: Request, res: Response, next: NextFunctio
 // Paragraphs
 // ====================
 
-/**
- * Create a new biography paragraph
- */
 export const createParagraph = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const paragraph = await aboutService.createParagraph(req.body);
+        const sectionId = req.params.sectionId as string;
+        const paragraph = await aboutService.createParagraph(sectionId, req.body);
         sendSuccess(res, 'Paragraph created', paragraph, 201);
     } catch (error) {
         next(error);
     }
 };
 
-/**
- * Update a biography paragraph
- */
 export const updateParagraph = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const id = req.params.id as string;
@@ -72,9 +102,6 @@ export const updateParagraph = async (req: Request, res: Response, next: NextFun
     }
 };
 
-/**
- * Delete a biography paragraph
- */
 export const deleteParagraph = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const id = req.params.id as string;
@@ -89,21 +116,16 @@ export const deleteParagraph = async (req: Request, res: Response, next: NextFun
 // Stats
 // ====================
 
-/**
- * Create a new professional stat
- */
 export const createStat = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const stat = await aboutService.createStat(req.body);
+        const sectionId = req.params.sectionId as string;
+        const stat = await aboutService.createStat(sectionId, req.body);
         sendSuccess(res, 'Stat created', stat, 201);
     } catch (error) {
         next(error);
     }
 };
 
-/**
- * Update a professional stat
- */
 export const updateStat = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const id = req.params.id as string;
@@ -114,9 +136,6 @@ export const updateStat = async (req: Request, res: Response, next: NextFunction
     }
 };
 
-/**
- * Delete a professional stat
- */
 export const deleteStat = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const id = req.params.id as string;

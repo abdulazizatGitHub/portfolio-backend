@@ -22,6 +22,7 @@ import contactRoutes from '@api/contact/contact.routes';
 import uploadRoutes from './api/uploads/upload.routes';
 import dashboardRoutes from './api/dashboard/dashboard.routes';
 import analyticsRoutes from './api/analytics/analytics.routes';
+import cookieParser from 'cookie-parser';
 import { trackVisit } from './api/middlewares/analytics.middleware';
 import path from 'path';
 
@@ -44,10 +45,13 @@ export const createApp = (): Application => {
     // CORS - Cross-Origin Resource Sharing
     app.use(
         cors({
-            origin: config.env.CORS_ORIGIN,
+            origin: config.corsOrigins,
             credentials: true,
         })
     );
+
+    // Cookie Parser
+    app.use(cookieParser());
 
     // Rate Limiting
     const limiter = rateLimit({
@@ -56,6 +60,7 @@ export const createApp = (): Application => {
         message: 'Too many requests from this IP, please try again later.',
         standardHeaders: true,
         legacyHeaders: false,
+        skip: () => config.isDevelopment, // Skip rate limiting in development
     });
     app.use(limiter);
 

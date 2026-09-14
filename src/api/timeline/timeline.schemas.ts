@@ -42,14 +42,33 @@ export const updateEducationSchema = z.object({
 });
 
 /**
- * Experience Schemas
+ * Experience Schemas (organization + nested roles)
  */
+export const employmentTypeEnum = z.enum([
+    'FULL_TIME',
+    'PART_TIME',
+    'CONTRACT',
+    'INTERNSHIP',
+    'FREELANCE',
+    'OTHER',
+]);
+
+const experienceRoleBody = z.object({
+    job_title: z.string().trim().min(1, 'Job title is required').max(150),
+    start_date: z.coerce.date(),
+    end_date: z.coerce.date().nullable().optional(),
+    description: z.string().trim().min(10, 'Description must be at least 10 characters'),
+    order_index: z.number().int().min(0).default(0),
+});
+
 export const experiencePrismaSchema = z.object({
     body: z.object({
-        period: z.string().trim().min(1, 'Period is required').max(100),
-        title: z.string().trim().min(1, 'Title is required').max(100), // e.g., "Software Engineer, Company Y"
-        description: z.string().trim().min(10, 'Description must be at least 10 characters'),
+        organization: z.string().trim().min(1, 'Organization is required').max(150),
+        location: z.string().trim().max(150).optional(),
+        employment_type: employmentTypeEnum.optional(),
+        summary: z.string().trim().optional(),
         order_index: z.number().int().min(0).default(0),
+        roles: z.array(experienceRoleBody).optional(),
     }),
 });
 
@@ -57,7 +76,21 @@ export const updateExperienceSchema = z.object({
     params: z.object({
         id: z.string().uuid('Invalid experience ID format'),
     }),
-    body: experiencePrismaSchema.shape.body.partial(),
+    body: experiencePrismaSchema.shape.body.omit({ roles: true }).partial(),
+});
+
+export const experienceRoleSchema = z.object({
+    params: z.object({
+        experienceId: z.string().uuid('Invalid experience ID format'),
+    }),
+    body: experienceRoleBody,
+});
+
+export const updateExperienceRoleSchema = z.object({
+    params: z.object({
+        id: z.string().uuid('Invalid role ID format'),
+    }),
+    body: experienceRoleBody.partial(),
 });
 
 /**

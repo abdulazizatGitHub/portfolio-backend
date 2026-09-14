@@ -32,67 +32,85 @@ describe('About & Stats Integration', () => {
     });
 
     describe('GET /api/v1/about', () => {
-        it('should return 404 if no content initialized', async () => {
+        it('should return an empty list when no sections exist', async () => {
             const res = await request(app).get('/api/v1/about');
-            expect(res.status).toBe(404);
+            expect(res.status).toBe(200);
+            expect(res.body.data).toEqual([]);
         });
     });
 
     describe('Admin Management', () => {
-        it('should initialize about metadata', async () => {
-            const res = await request(app)
-                .put('/api/v1/about')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({ role_title: 'Software Architect' });
+        let sectionId: string;
 
-            expect(res.status).toBe(200);
+        it('should create an about section', async () => {
+            const res = await request(app)
+                .post('/api/v1/about/sections')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({ role_title: 'Software Architect', order_index: 0 });
+
+            expect(res.status).toBe(201);
             expect(res.body.data.role_title).toBe('Software Architect');
+            sectionId = res.body.data.id;
         });
 
-        it('should manage paragraphs', async () => {
-            // Create
+        it('should update the about section', async () => {
+            const res = await request(app)
+                .patch(`/api/v1/about/sections/${sectionId}`)
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({ role_title: 'Principal Engineer' });
+
+            expect(res.status).toBe(200);
+            expect(res.body.data.role_title).toBe('Principal Engineer');
+        });
+
+        it('should manage paragraphs scoped to the section', async () => {
             const createRes = await request(app)
-                .post('/api/v1/about/paragraphs')
+                .post(`/api/v1/about/sections/${sectionId}/paragraphs`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({ content: 'This is a long bio paragraph for testing.', order_index: 1 });
 
             expect(createRes.status).toBe(201);
             const pId = createRes.body.data.id;
 
-            // Updated unified retrieval
             const getRes = await request(app).get('/api/v1/about');
-            expect(getRes.body.data.paragraphs).toHaveLength(1);
+            const section = getRes.body.data.find((s: any) => s.id === sectionId);
+            expect(section.paragraphs).toHaveLength(1);
 
-            // Delete
             await request(app)
                 .delete(`/api/v1/about/paragraphs/${pId}`)
                 .set('Authorization', `Bearer ${adminToken}`);
 
             const getRes2 = await request(app).get('/api/v1/about');
-            expect(getRes2.body.data.paragraphs).toHaveLength(0);
+            const section2 = getRes2.body.data.find((s: any) => s.id === sectionId);
+            expect(section2.paragraphs).toHaveLength(0);
         });
 
-        it('should manage stats', async () => {
-            // Create
+        it('should manage stats scoped to the section', async () => {
             const createRes = await request(app)
-                .post('/api/v1/about/stats')
+                .post(`/api/v1/about/sections/${sectionId}/stats`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({ label: 'Projects', value: '50+' });
 
             expect(createRes.status).toBe(201);
             const sId = createRes.body.data.id;
 
-            // Update
             const updateRes = await request(app)
                 .patch(`/api/v1/about/stats/${sId}`)
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({ value: '60+' });
             expect(updateRes.body.data.value).toBe('60+');
 
-            // Delete
             await request(app)
                 .delete(`/api/v1/about/stats/${sId}`)
                 .set('Authorization', `Bearer ${adminToken}`);
+        });
+
+        it('should delete the about section', async () => {
+            const res = await request(app)
+                .delete(`/api/v1/about/sections/${sectionId}`)
+                .set('Authorization', `Bearer ${adminToken}`);
+
+            expect(res.status).toBe(200);
         });
     });
 });

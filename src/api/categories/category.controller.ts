@@ -6,15 +6,24 @@ import { sendSuccess, sendList } from '@utils/response';
  * Get all categories with pagination and filters
  */
 export const getCategories = async (req: Request, res: Response) => {
-    const { page, limit, search, sortBy, sortOrder, includeDeleted } = req.query;
+    // validate() middleware has already parsed req.query per categoryQuerySchema,
+    // so includeDeleted arrives here as a real boolean already.
+    const { page, limit, search, sortBy, sortOrder, includeDeleted } = req.query as unknown as {
+        page?: number;
+        limit?: number;
+        search?: string;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+        includeDeleted?: boolean;
+    };
 
     const { categories, total } = await categoryService.getAllCategories({
-        page: page ? Number(page) : undefined,
-        limit: limit ? Number(limit) : undefined,
-        search: search as string,
-        sortBy: sortBy as string,
-        sortOrder: sortOrder as 'asc' | 'desc',
-        includeDeleted: includeDeleted === 'true',
+        page,
+        limit,
+        search,
+        sortBy,
+        sortOrder,
+        includeDeleted,
     });
 
     return sendList(res, 'Categories retrieved successfully', categories, {

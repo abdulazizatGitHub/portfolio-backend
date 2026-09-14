@@ -18,7 +18,7 @@ export class DashboardService {
         const [projectCount, skillCount, experienceCount, educationCount] = await Promise.all([
             prisma.project.count({ where: { deleted_at: null } }),
             prisma.skill.count(),
-            prisma.experienceEntry.count(),
+            prisma.experience.count(),
             prisma.educationEntry.count(),
         ]);
 

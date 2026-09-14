@@ -45,6 +45,7 @@ describe('Database Integration Tests', () => {
             const project = await prisma.project.create({
                 data: {
                     title: 'Test Project',
+                    short_description: 'Short test description',
                     description: 'Test description',
                     order_index: 1,
                     category_id: category.id,
@@ -86,6 +87,7 @@ describe('Database Integration Tests', () => {
             const project = await prisma.project.create({
                 data: {
                     title: 'Full Stack App',
+                    short_description: 'Short description',
                     description: 'Test',
                     order_index: 1,
                     category_id: category.id,
@@ -138,6 +140,7 @@ describe('Database Integration Tests', () => {
             const project = await prisma.project.create({
                 data: {
                     title: 'Temp Project',
+                    short_description: 'Short description',
                     description: 'Test',
                     order_index: 1,
                     category_id: category.id,
@@ -239,6 +242,7 @@ describe('Database Integration Tests', () => {
             const project = await prisma.project.create({
                 data: {
                     title: 'Soft Delete Test',
+                    short_description: 'Short description',
                     description: 'Test',
                     order_index: 1,
                     category_id: category.id,

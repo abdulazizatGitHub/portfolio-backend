@@ -60,6 +60,62 @@ describe('Category Repository', () => {
             expect(categories[0]!.slug).toBe('category-b'); // order_index 1
             expect(categories[1]!.slug).toBe('category-a'); // order_index 2
         });
+
+        it('should include soft-deleted categories when includeDeleted is true', async () => {
+            const categories = await CategoryRepository.findAll({ includeDeleted: true });
+            expect(categories.some((c) => c.slug === 'deleted-category')).toBe(true);
+        });
+
+        it('should filter by search term across name and description', async () => {
+            await CategoryRepository.create({
+                name: 'Searchable Category',
+                slug: 'searchable-category',
+                description: 'unique-description-marker',
+                order_index: 5,
+            });
+
+            const byName = await CategoryRepository.findAll({ search: 'Searchable' });
+            expect(byName.some((c) => c.slug === 'searchable-category')).toBe(true);
+
+            const byDescription = await CategoryRepository.findAll({ search: 'unique-description-marker' });
+            expect(byDescription.some((c) => c.slug === 'searchable-category')).toBe(true);
+
+            const noMatch = await CategoryRepository.findAll({ search: 'no-such-term-xyz' });
+            expect(noMatch).toHaveLength(0);
+        });
+    });
+
+    describe('count', () => {
+        it('should count non-deleted categories excluding soft-deleted by default', async () => {
+            const total = await CategoryRepository.count();
+            const all = await CategoryRepository.findAll();
+            expect(total).toBe(all.length);
+        });
+
+        it('should count including soft-deleted when includeDeleted is true', async () => {
+            const total = await CategoryRepository.count({ includeDeleted: true });
+            const all = await CategoryRepository.findAll({ includeDeleted: true });
+            expect(total).toBe(all.length);
+        });
+
+        it('should count matching a search term', async () => {
+            const total = await CategoryRepository.count({ search: 'Searchable' });
+            expect(total).toBe(1);
+        });
+    });
+
+    describe('restore', () => {
+        it('should restore a soft-deleted category', async () => {
+            const category = await CategoryRepository.create({
+                name: 'Restorable Category',
+                slug: 'restorable-category',
+                order_index: 9,
+            });
+            await CategoryRepository.softDelete(category.id);
+
+            const restored = await CategoryRepository.restore(category.id);
+            expect(restored.deleted_at).toBeNull();
+        });
     });
 
     describe('findBySlug', () => {
@@ -125,6 +181,19 @@ describe('Category Repository', () => {
             const found = await CategoryRepository.findById(category.id);
 
             expect(found).toBeNull();
+        });
+
+        it('should find a soft-deleted category when includeDeleted is true', async () => {
+            const category = await CategoryRepository.create({
+                name: 'Soft Deleted Visible',
+                slug: 'soft-deleted-visible',
+                order_index: 1,
+            });
+            await CategoryRepository.softDelete(category.id);
+
+            const found = await CategoryRepository.findById(category.id, true);
+            expect(found).not.toBeNull();
+            expect(found?.deleted_at).not.toBeNull();
         });
     });
 

@@ -110,3 +110,37 @@ export const deleteExperience = async (req: Request, res: Response, next: NextFu
         next(error);
     }
 };
+
+// ====================
+// Experience Roles
+// ====================
+
+export const createExperienceRole = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const experienceId = req.params.experienceId as string;
+        const role = await timelineService.createRole(experienceId, req.body);
+        sendSuccess(res, 'Experience role created', role, 201);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const updateExperienceRole = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const id = req.params.id as string;
+        const role = await timelineService.updateRole(id, req.body);
+        sendSuccess(res, 'Experience role updated', role);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const deleteExperienceRole = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const id = req.params.id as string;
+        await timelineService.deleteRole(id);
+        sendSuccess(res, 'Experience role deleted', null);
+    } catch (error) {
+        next(error);
+    }
+};

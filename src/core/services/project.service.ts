@@ -2,7 +2,7 @@ import * as projectRepository from '@data/repositories/project.repository';
 import * as categoryRepository from '@data/repositories/category.repository';
 import * as skillRepository from '@data/repositories/skill.repository';
 import { NotFoundError, BadRequestError } from '../exceptions/app-errors';
-import { Project, ProjectStatus } from '@data/prisma.client';
+import { Project, ProjectStatus, Prisma } from '@data/prisma.client';
 import { ProjectWithRelations } from '@data/repositories/project.repository';
 
 /**
@@ -122,6 +122,7 @@ export const updateProject = async (
         order_index?: number;
         category_id?: string;
         skill_ids?: string[];
+        decisions?: Array<{ question: string; answer: string }> | null;
     }
 ): Promise<Project> => {
     // 1. Check if project exists
@@ -130,11 +131,12 @@ export const updateProject = async (
     // 2. Validate dependencies if updated
     await validateRelationships(data.category_id, data.skill_ids);
 
-    const { skill_ids, category_id, ...projectData } = data;
+    const { skill_ids, category_id, decisions, ...projectData } = data;
 
     // 3. Update with clean-replace for skills
     return await projectRepository.update(id, {
         ...projectData,
+        decisions: decisions === null ? Prisma.JsonNull : decisions,
         category: category_id ? { connect: { id: category_id } } : undefined,
         project_skills: skill_ids ? {
             deleteMany: {},

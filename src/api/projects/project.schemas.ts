@@ -2,6 +2,13 @@ import { z } from 'zod';
 
 export const projectStatusEnum = z.enum(['LIVE', 'DRAFT', 'DEVELOPMENT', 'ARCHIVED']);
 
+const decisionEntrySchema = z.object({
+    question: z.string().min(1).max(100),
+    answer: z.string().min(1).max(300),
+});
+
+const decisionsSchema = z.array(decisionEntrySchema).max(8).optional().nullable();
+
 /**
  * Project Query Schema (Pagination, Search, Filter)
  */
@@ -39,6 +46,7 @@ export const createProjectSchema = z.object({
         order_index: z.number().int().min(0).optional(),
         category_id: z.string().uuid(),
         skill_ids: z.array(z.string().uuid()).optional(),
+        decisions: decisionsSchema,
     }),
 });
 
@@ -64,6 +72,7 @@ export const updateProjectSchema = z.object({
         order_index: z.number().int().min(0).optional(),
         category_id: z.string().uuid().optional(),
         skill_ids: z.array(z.string().uuid()).optional(),
+        decisions: decisionsSchema,
     }),
 });
 

@@ -19,6 +19,7 @@ import personalRoutes from '@api/personal/personal.routes';
 import aboutRoutes from '@api/about/about.routes';
 import timelineRoutes from '@api/timeline/timeline.routes';
 import contactRoutes from '@api/contact/contact.routes';
+import githubRoutes from '@api/github/github.routes';
 import uploadRoutes from './api/uploads/upload.routes';
 import dashboardRoutes from './api/dashboard/dashboard.routes';
 import analyticsRoutes from './api/analytics/analytics.routes';
@@ -97,6 +98,7 @@ export const createApp = (): Application => {
     app.use('/api/v1/about', trackVisit, aboutRoutes);
     app.use('/api/v1/timeline', trackVisit, timelineRoutes);
     app.use('/api/v1/contact', trackVisit, contactRoutes);
+    app.use('/api/v1/github', trackVisit, githubRoutes);
 
     // Admin API routes
     app.use('/api/v1/auth', authRoutes);

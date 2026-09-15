@@ -1,5 +1,11 @@
 {
     "compilerOptions": {
+        /* Silences TS 6.0+ deprecation notices for moduleResolution:"node" and
+           baseUrl ahead of their removal in TS 7.0 (see https://aka.ms/ts6).
+           Kept intentionally rather than migrating to node16/nodenext, which
+           would change real import-resolution behavior on this CommonJS
+           backend without a concrete need to do so right now. */
+        "ignoreDeprecations": "5.0",
         /* Language and Environment */
         "target": "ES2022",
         "lib": [

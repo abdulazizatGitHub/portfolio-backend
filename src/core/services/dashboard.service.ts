@@ -109,15 +109,17 @@ export class DashboardService {
         }));
 
         // 8. Traffic Sources (Referrer grouping)
+        // Group by the raw referer first, then merge rows that resolve to the
+        // same hostname (e.g. distinct referring pages on the same site) —
+        // grouping by raw referer alone fragments a single source across
+        // several rows sharing the same derived label.
         const trafficSourcesRaw = await prisma.pageVisit.groupBy({
             by: ['referer'],
-            _count: { referer: true },
-            orderBy: { _count: { referer: 'desc' } },
-            take: 10
+            _count: { referer: true }
         });
 
-        const totalVisitsCount = totalVisits || 1;
-        const trafficSources = trafficSourcesRaw.map(s => {
+        const visitsBySource = new Map<string, number>();
+        trafficSourcesRaw.forEach(s => {
             let source = 'Direct';
             if (s.referer) {
                 try {
@@ -127,12 +129,18 @@ export class DashboardService {
                     source = s.referer;
                 }
             }
-            return {
-                source,
-                visits: s._count.referer,
-                percentage: Math.round((s._count.referer / totalVisitsCount) * 100)
-            };
+            visitsBySource.set(source, (visitsBySource.get(source) || 0) + s._count.referer);
         });
+
+        const totalVisitsCount = totalVisits || 1;
+        const trafficSources = Array.from(visitsBySource.entries())
+            .map(([source, visits]) => ({
+                source,
+                visits,
+                percentage: Math.round((visits / totalVisitsCount) * 100)
+            }))
+            .sort((a, b) => b.visits - a.visits)
+            .slice(0, 10);
 
         // 9. Recent Activities
         const recentActivities = await prisma.activityLog.findMany({

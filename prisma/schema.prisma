@@ -100,6 +100,7 @@ model Project {
   end_date          DateTime?
   demo_url          String?
   repo_url          String?
+  decisions         Json?
   featured          Boolean       @default(false)
   is_published      Boolean       @default(false)
   order_index       Int           @default(0)
@@ -375,4 +376,15 @@ model ActivityLog {
   @@index([user_id])
   @@index([created_at])
   @@map("activity_logs")
+}
+
+// [NEW] GitHubCache — caches GitHub API responses for the public "Proof of Work" frontend
+model GitHubCache {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  data      Json
+  cachedAt  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("github_cache")
 }

@@ -31,6 +31,8 @@ const envSchema = z.object({
         .string()
         .transform((val) => val === 'true')
         .default('false'),
+    GITHUB_USERNAME: z.string().default(''),
+    GITHUB_TOKEN: z.string().default(''),
 });
 
 /**
